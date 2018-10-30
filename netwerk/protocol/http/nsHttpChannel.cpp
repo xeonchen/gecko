@@ -6755,7 +6755,7 @@ nsresult nsHttpChannel::BeginConnect() {
 }
 
 void nsHttpChannel::MaybeStartDNSPrefetch() {
-  if (!mConnectionInfo->UsingHttpProxy() &&
+  if (!mConnectionInfo->UsingProxy() &&
       !(mLoadFlags & (LOAD_NO_NETWORK_IO | LOAD_ONLY_FROM_CACHE))) {
     // Start a DNS lookup very early in case the real open is queued the DNS can
     // happen in parallel. Do not do so in the presence of an HTTP proxy as
