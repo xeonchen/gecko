@@ -403,9 +403,10 @@ bool D3D11LayersCrashGuard::UpdateEnvironment() {
 
   // Feature status.
 #if defined(XP_WIN)
-  bool d2dEnabled = gfxPrefs::Direct2DForceEnabled() ||
-                    (!gfxPrefs::Direct2DDisabled() &&
-                     FeatureEnabled(nsIGfxInfo::FEATURE_DIRECT2D));
+  bool d2dEnabled = !nsContentUtils::ShouldResistFingerprinting() &&
+                    (gfxPrefs::Direct2DForceEnabled() ||
+                     (!gfxPrefs::Direct2DDisabled() &&
+                      FeatureEnabled(nsIGfxInfo::FEATURE_DIRECT2D)));
   changed |= CheckAndUpdateBoolPref("feature-d2d", d2dEnabled);
 
   bool d3d11Enabled = gfxConfig::IsEnabled(Feature::D3D11_COMPOSITING);

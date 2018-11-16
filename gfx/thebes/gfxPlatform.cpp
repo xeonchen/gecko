@@ -875,8 +875,9 @@ void gfxPlatform::Init() {
   {
     nsAutoCString forcedPrefs;
     // D2D prefs
-    forcedPrefs.AppendPrintf("FP(D%d%d", gfxPrefs::Direct2DDisabled(),
-                             gfxPrefs::Direct2DForceEnabled());
+    forcedPrefs.AppendPrintf(
+        "FP(D%d%d%d", nsContentUtils::ShouldResistFingerprinting(),
+        gfxPrefs::Direct2DDisabled(), gfxPrefs::Direct2DForceEnabled());
     // Layers prefs
     forcedPrefs.AppendPrintf(
         "-L%d%d%d%d", gfxPrefs::LayersAMDSwitchableGfxEnabled(),
@@ -1598,7 +1599,8 @@ bool gfxPlatform::AllowOpenGLCanvas() {
       (mCompositorBackend == LayersBackend::LAYERS_OPENGL &&
        (GetContentBackendFor(mCompositorBackend) == BackendType::SKIA));
 
-  if (gfxPrefs::CanvasAzureAccelerated() && correctBackend) {
+  if (!nsContentUtils::ShouldResistFingerprinting() &&
+      gfxPrefs::CanvasAzureAccelerated() && correctBackend) {
     nsCOMPtr<nsIGfxInfo> gfxInfo = do_GetService("@mozilla.org/gfx/info;1");
     int32_t status;
     nsCString discardFailureId;
@@ -2573,6 +2575,11 @@ void gfxPlatform::InitCompositorAccelerationPrefs() {
     feature.ForceDisable(
         FeatureStatus::Blocked, "Acceleration blocked by recording/replaying",
         NS_LITERAL_CSTRING("FEATURE_FAILURE_COMP_RECORDREPLAY"));
+  }
+  if (nsContentUtils::ShouldResistFingerprinting()) {
+    feature.ForceDisable(
+        FeatureStatus::Blocked, "Acceleration blocked by resistFingerprinting",
+        NS_LITERAL_CSTRING("FEATURE_FAILURE_COMP_RESISTFINGERPRINTING"));
   }
 }
 
