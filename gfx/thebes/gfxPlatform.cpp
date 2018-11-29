@@ -1609,6 +1609,7 @@ bool gfxPlatform::AllowOpenGLCanvas() {
                             discardFailureId, &status)) &&
                         status == nsIGfxInfo::FEATURE_STATUS_OK);
   }
+  printf_stderr("[xeon] AllowOpenGLCanvas = false\n");
   return false;
 }
 

@@ -55,6 +55,7 @@ bool IsImageExtractionAllowed(Document* aDocument, JSContext* aCx,
 
   // Allow while using Software Rendering
   if (!gfxPrefs::CanvasAzureAccelerated()) {
+    printf_stderr("[xeon] Software Rendering\n");
     return true;
   }
 
