@@ -406,12 +406,12 @@ static SmoothBehavior smooth_behavior() {
         SkASSERT(ctFont);
 
         CGContextSetShouldSmoothFonts(noSmoothContext.get(), false);
-        CGContextSetShouldAntialias(noSmoothContext.get(), true);
+        CGContextSetShouldAntialias(noSmoothContext.get(), false);
         CGContextSetTextDrawingMode(noSmoothContext.get(), kCGTextFill);
         CGContextSetGrayFillColor(noSmoothContext.get(), 1, 1);
 
         CGContextSetShouldSmoothFonts(smoothContext.get(), true);
-        CGContextSetShouldAntialias(smoothContext.get(), true);
+        CGContextSetShouldAntialias(smoothContext.get(), false);
         CGContextSetTextDrawingMode(smoothContext.get(), kCGTextFill);
         CGContextSetGrayFillColor(smoothContext.get(), 1, 1);
 
