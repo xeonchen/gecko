@@ -53,6 +53,11 @@ bool IsImageExtractionAllowed(Document* aDocument, JSContext* aCx,
     return true;
   }
 
+  // Allow while using Software Rendering
+  if (!gfxPrefs::CanvasAzureAccelerated()) {
+    return true;
+  }
+
   // Don't proceed if we don't have a document or JavaScript context.
   if (!aDocument || !aCx) {
     return false;
