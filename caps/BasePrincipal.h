@@ -167,7 +167,7 @@ class BasePrincipal : public nsJSPrincipals {
   PrincipalKind Kind() const { return mKind; }
 
   already_AddRefed<BasePrincipal>
-  CloneStrippingUserContextIdAndFirstPartyDomain();
+  CloneStrippingUserContextId();
 
   // If this is an add-on content script principal, returns its AddonPolicy.
   // Otherwise returns null.
