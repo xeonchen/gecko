@@ -6075,3 +6075,5 @@ pref("toolkit.telemetry.prioping.enabled", false);
 // External.AddSearchProvider is deprecated and it will be removed in the next
 // cycles.
 pref("dom.sidebar.enabled", true);
+
+pref("network.delay.tracking.load", 300);
