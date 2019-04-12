@@ -1422,6 +1422,8 @@ pref("privacy.trackingprotection.enabled",  false);
 // Enforce tracking protection in Private Browsing mode
 // In Firefox Desktop this pref is set by browser.contentblocking.features.[standard, strict] see firefox.js for details.
 pref("privacy.trackingprotection.pbmode.enabled",  true);
+// Enable Origin Telemetry by default
+pref("privacy.trackingprotection.origin_telemetry.enabled", true);
 // First Party Isolation (double keying), disabled by default
 pref("privacy.firstparty.isolate",                        false);
 // If false, two windows in the same domain with different first party domains
