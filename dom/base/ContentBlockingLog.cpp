@@ -64,10 +64,7 @@ static bool IsReportingPerDocumentEnabled() {
 }
 
 static bool IsReportingEnabled() {
-  if (StaticPrefs::telemetry_origin_telemetry_test_mode_enabled()) {
-    return true;
-  } else if (!StaticPrefs::
-                 privacy_trackingprotection_origin_telemetry_enabled()) {
+  if (!StaticPrefs::privacy_trackingprotection_origin_telemetry_enabled()) {
     return false;
   }
 
@@ -94,35 +91,21 @@ void ContentBlockingLog::ReportLog() {
 
       const bool isBlocked = logEntry.mBlocked;
       Maybe<StorageAccessGrantedReason> reason = logEntry.mReason;
-      const bool testMode =
-          StaticPrefs::telemetry_origin_telemetry_test_mode_enabled();
 
       using OriginMetricID = Telemetry::OriginMetricID;
-      OriginMetricID metricId =
-          testMode ? OriginMetricID::ContentBlocking_Blocked_TestOnly
-                   : OriginMetricID::ContentBlocking_Blocked;
+      OriginMetricID metricId = OriginMetricID::ContentBlocking_Blocked;
       if (!isBlocked) {
         MOZ_ASSERT(reason.isSome());
         switch (reason.value()) {
           case StorageAccessGrantedReason::eStorageAccessAPI:
-            metricId =
-                testMode
-                    ? OriginMetricID::
-                          ContentBlocking_StorageAccessAPIExempt_TestOnly
-                    : OriginMetricID::ContentBlocking_StorageAccessAPIExempt;
+            metricId = OriginMetricID::ContentBlocking_StorageAccessAPIExempt;
             break;
           case StorageAccessGrantedReason::eOpenerAfterUserInteraction:
-            metricId =
-                testMode
-                    ? OriginMetricID::
-                          ContentBlocking_OpenerAfterUserInteractionExempt_TestOnly
-                    : OriginMetricID::
-                          ContentBlocking_OpenerAfterUserInteractionExempt;
+            metricId = OriginMetricID::
+                ContentBlocking_OpenerAfterUserInteractionExempt;
             break;
           case StorageAccessGrantedReason::eOpener:
-            metricId =
-                testMode ? OriginMetricID::ContentBlocking_OpenerExempt_TestOnly
-                         : OriginMetricID::ContentBlocking_OpenerExempt;
+            metricId = OriginMetricID::ContentBlocking_OpenerExempt;
             break;
           default:
             MOZ_ASSERT_UNREACHABLE("Unknown StorageAccessGrantedReason");
