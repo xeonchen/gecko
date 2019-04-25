@@ -3581,7 +3581,7 @@ networking:
     bug_numbers:
       - 1533363
     description: >
-      How many bytes of HTTP data transferred by type, there are some categories
+      How many KB of HTTP data transferred by type, there are some categories
       separated by keys based on 4 parameters:
         1. normal browsing or private browsing
         2. first party or third party
