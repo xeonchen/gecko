@@ -2591,7 +2591,7 @@ VARCACHE_PREF(
 VARCACHE_PREF(
   "telemetry.origin_telemetry_test_mode.enabled",
    telemetry_origin_telemetry_test_mode_enabled,
-  RelaxedAtomicBool, false
+  RelaxedAtomicBool, true
 )
 
 //---------------------------------------------------------------------------
