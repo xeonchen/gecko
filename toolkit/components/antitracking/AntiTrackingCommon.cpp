@@ -896,6 +896,7 @@ AntiTrackingCommon::AddFirstPartyStorageAccessGrantedFor(
         pwin->GetCurrentInnerWindow()->GetExtantDoc()->GetChannel();
 
     pwin->NotifyContentBlockingEvent(blockReason, channel, false, trackingURI,
+                                     parentWindow->GetExtantDoc()->GetChannel(),
                                      Some(aReason));
 
     ReportUnblockingToConsole(parentWindow,
@@ -1763,13 +1764,14 @@ void AntiTrackingCommon::NotifyBlockingDecision(nsIChannel* aChannel,
   aChannel->GetURI(getter_AddRefs(uri));
 
   if (aDecision == BlockingDecision::eBlock) {
-    pwin->NotifyContentBlockingEvent(aRejectedReason, aChannel, true, uri);
+    pwin->NotifyContentBlockingEvent(aRejectedReason, aChannel, true, uri,
+                                     aChannel);
 
     ReportBlockingToConsole(pwin, uri, aRejectedReason);
   }
 
   pwin->NotifyContentBlockingEvent(nsIWebProgressListener::STATE_COOKIES_LOADED,
-                                   aChannel, false, uri);
+                                   aChannel, false, uri, aChannel);
 }
 
 /* static */
@@ -1811,15 +1813,17 @@ void AntiTrackingCommon::NotifyBlockingDecision(nsPIDOMWindowInner* aWindow,
     return;
   }
   nsIURI* uri = document->GetDocumentURI();
+  nsIChannel* trackingChannel = document->GetChannel();
 
   if (aDecision == BlockingDecision::eBlock) {
-    pwin->NotifyContentBlockingEvent(aRejectedReason, channel, true, uri);
+    pwin->NotifyContentBlockingEvent(aRejectedReason, channel, true, uri,
+                                     trackingChannel);
 
     ReportBlockingToConsole(pwin, uri, aRejectedReason);
   }
 
   pwin->NotifyContentBlockingEvent(nsIWebProgressListener::STATE_COOKIES_LOADED,
-                                   channel, false, uri);
+                                   channel, false, uri, trackingChannel);
 }
 
 /* static */
