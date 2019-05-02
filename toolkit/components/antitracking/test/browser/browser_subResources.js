@@ -161,6 +161,13 @@ add_task(async function() {
        "Correct blocking status reported");
     ok(item[2] >= 1,
        "Correct repeat count reported");
+    if (blocked) {
+      is(item[3], -1,
+         "No reason is given");
+    } else {
+      ok(item[3] >= 0,
+         "Correct granted reason is given");
+    }
   };
 
   let expectTrackerFound = item => {
@@ -170,6 +177,8 @@ add_task(async function() {
        "Correct blocking status reported");
     ok(item[2] >= 1,
        "Correct repeat count reported");
+    is(item[3], -1,
+       "No reason is given");
   };
 
   let expectCookiesLoaded = item => {
@@ -179,6 +188,8 @@ add_task(async function() {
        "Correct blocking status reported");
     ok(item[2] >= 1,
        "Correct repeat count reported");
+    is(item[3], -1,
+       "No reason is given");
   };
 
   let log = JSON.parse(await browser.getContentBlockingLog());

@@ -85,6 +85,8 @@ add_task(async function() {
        "Correct blocking status reported");
     ok(item[2] >= 1,
        "Correct repeat count reported");
+    is(item[3], -1,
+       "No reason should exist");
   };
 
   let log = JSON.parse(await browser.getContentBlockingLog());
