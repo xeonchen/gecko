@@ -175,8 +175,11 @@ class ContentBlockingLog final {
         w.StartArrayElement(w.SingleLineStyle);
         {
           w.IntElement(nsIWebProgressListener::STATE_LOADED_TRACKING_CONTENT);
-          w.BoolElement(true);  // blocked
-          w.IntElement(1);      // repeat count
+          w.BoolElement(true);    // blocked
+          w.IntElement(1);        // repeat count
+          w.IntElement(-1);       // reason
+          w.StartArrayElement();  // hash
+          w.EndArray();
         }
         w.EndArray();
       }
@@ -185,7 +188,10 @@ class ContentBlockingLog final {
         {
           w.IntElement(nsIWebProgressListener::STATE_COOKIES_LOADED);
           w.BoolElement(entry.mData->mHasCookiesLoaded.value());  // blocked
-          w.IntElement(1);  // repeat count
+          w.IntElement(1);        // repeat count
+          w.IntElement(-1);       // reason
+          w.StartArrayElement();  // hash
+          w.EndArray();
         }
         w.EndArray();
       }
@@ -195,9 +201,13 @@ class ContentBlockingLog final {
           w.IntElement(item.mType);
           w.BoolElement(item.mBlocked);
           w.IntElement(item.mRepeatCount);
-          if (item.mReason.isSome()) {
-            w.IntElement(item.mReason.value());
+          w.IntElement(item.mReason.valueOr(
+              static_cast<AntiTrackingCommon::StorageAccessGrantedReason>(-1)));
+          w.StartArrayElement();
+          for (const auto& hash : item.mTrackingFullHashes) {
+            w.StringElement(hash.get());
           }
+          w.EndArray();
         }
         w.EndArray();
       }
