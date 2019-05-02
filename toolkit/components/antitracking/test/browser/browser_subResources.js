@@ -168,6 +168,8 @@ add_task(async function() {
       ok(item[3] >= 0,
          "Correct granted reason is given");
     }
+    ok(item[4].length > 0,
+       "Correct tracker hash reported");
   };
 
   let expectTrackerFound = item => {
