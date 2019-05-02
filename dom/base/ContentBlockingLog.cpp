@@ -106,6 +106,12 @@ static void ReportOriginSingleHash(OriginMetricID aId,
 
 void ContentBlockingLog::ReportLog() {
   MOZ_ASSERT(NS_IsMainThread());
+  {
+    auto str = Stringify();
+    printf_stderr("[xeon] Stringify begin\n");
+    printf_stderr("[xeon] %s\n", str.get());
+    printf_stderr("[xeon] Stringify end\n");
+  }
 
   if (!IsReportingEnabled()) {
     return;

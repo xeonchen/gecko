@@ -12218,6 +12218,7 @@ void Document::MaybeAllowStorageForOpenerAfterUserInteraction() {
   Unused << AntiTrackingCommon::AddFirstPartyStorageAccessGrantedFor(
       NodePrincipal(), openerInner,
       AntiTrackingCommon::eOpenerAfterUserInteraction);
+  // MOZ_CRASH("Gary is happy");
 }
 
 namespace {
