@@ -433,7 +433,14 @@ bool FeatureData::MaybeCompleteClassification(nsIChannel* aChannel) {
 
   nsTArray<nsCString> list;
   nsTArray<nsCString> hashes;
-  list.AppendElement(mHostInPrefTables[nsIUrlClassifierFeature::blacklist]);
+  if (!mHostInPrefTables[nsIUrlClassifierFeature::blacklist].IsEmpty()) {
+    const nsCString& host = mHostInPrefTables[nsIUrlClassifierFeature::blacklist];
+    Completion complete;
+    complete.FromPlaintext(host);
+    list.AppendElement(host);
+    nsCString* hash = hashes.AppendElement();
+    complete.ToString(*hash);
+  }
 
   for (TableData* tableData : mBlacklistTables) {
     if (tableData->MatchState() == TableData::eMatch) {
