@@ -93,6 +93,16 @@ struct SafebrowsingHash {
     MOZ_ASSERT(aStr.BeginReading()[len] == '\0');
   }
 
+  nsCString ToString() const {
+    nsAutoCString str;
+    uint32_t len = ((sHashSize + 2) / 3) * 4;
+
+    str.SetLength(len);
+    PL_Base64Encode((char*)buf, sHashSize, str.BeginWriting());
+    MOZ_ASSERT(str.BeginReading()[len] == '\0');
+    return std::move(str);
+  }
+
   void ToHexString(nsACString& aStr) const {
     static const char* const lut = "0123456789ABCDEF";
     // 32 bytes is the longest hash
