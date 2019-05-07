@@ -359,8 +359,12 @@ class MOZ_STACK_CLASS UpgradeHostToOriginHostfileImport final
     nsresult rv = GetPrincipalFromOrigin(aOrigin, getter_AddRefs(principal));
     NS_ENSURE_SUCCESS(rv, rv);
 
+    // first party domain is not stripped in GetPrincipalFromOrigin()
+    bool hasFirstPartyDomain = true;  // xeon: TODO
+    MOZ_ASSERT(!principal->OriginAttributesRef().mFirstPartyDomain.IsEmpty());
+
     return mPm->AddInternal(principal, aType, aPermission, mID, aExpireType,
-                            aExpireTime, aModificationTime,
+                            aExpireTime, aModificationTime, hasFirstPartyDomain,
                             nsPermissionManager::eDontNotify, mOperation);
   }
 
@@ -884,7 +888,7 @@ void nsPermissionManager::Startup() {
 // nsPermissionManager Implementation
 
 #define PERMISSIONS_FILE_NAME "permissions.sqlite"
-#define HOSTS_SCHEMA_VERSION 10
+#define HOSTS_SCHEMA_VERSION 11
 
 #define HOSTPERM_FILE_NAME "hostperm.1"
 
@@ -1630,6 +1634,18 @@ nsresult nsPermissionManager::InitDB(bool aRemoveFile) {
         // fall through to the next upgrade
         MOZ_FALLTHROUGH;
 
+      case 10: {
+        rv = mDBConn->ExecuteSimpleSQL(NS_LITERAL_CSTRING(
+            "ALTER TABLE moz_hosts ADD hasFirstPartyDomain INTEGER"));
+        NS_ENSURE_SUCCESS(rv, rv);
+
+        rv = mDBConn->SetSchemaVersion(11);
+        NS_ENSURE_SUCCESS(rv, rv);
+      }
+
+        // fall through to the next upgrade
+        MOZ_FALLTHROUGH;
+
       // current version.
       case HOSTS_SCHEMA_VERSION:
         break;
@@ -1646,7 +1662,7 @@ nsresult nsPermissionManager::InitDB(bool aRemoveFile) {
         rv = mDBConn->CreateStatement(
             NS_LITERAL_CSTRING(
                 "SELECT origin, type, permission, expireType, expireTime, "
-                "modificationTime FROM moz_perms"),
+                "modificationTime, hasFirstPartyDomain FROM moz_perms"),
             getter_AddRefs(stmt));
         if (NS_SUCCEEDED(rv)) break;
 
@@ -1665,8 +1681,8 @@ nsresult nsPermissionManager::InitDB(bool aRemoveFile) {
   rv = mDBConn->CreateAsyncStatement(
       NS_LITERAL_CSTRING("INSERT INTO moz_perms "
                          "(id, origin, type, permission, expireType, "
-                         "expireTime, modificationTime) "
-                         "VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"),
+                         "expireTime, modificationTime, hasFirstPartyDomain) "
+                         "VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)"),
       getter_AddRefs(mStmtInsert));
   NS_ENSURE_SUCCESS(rv, rv);
 
@@ -1676,9 +1692,10 @@ nsresult nsPermissionManager::InitDB(bool aRemoveFile) {
   NS_ENSURE_SUCCESS(rv, rv);
 
   rv = mDBConn->CreateAsyncStatement(
-      NS_LITERAL_CSTRING("UPDATE moz_perms "
-                         "SET permission = ?2, expireType= ?3, expireTime = "
-                         "?4, modificationTime = ?5 WHERE id = ?1"),
+      NS_LITERAL_CSTRING(
+          "UPDATE moz_perms "
+          "SET permission = ?2, expireType= ?3, expireTime = "
+          "?4, modificationTime = ?5, hasFirstPartyDomain = ?6 WHERE id = ?1"),
       getter_AddRefs(mStmtUpdate));
   NS_ENSURE_SUCCESS(rv, rv);
 
@@ -1699,16 +1716,17 @@ nsresult nsPermissionManager::CreateTable() {
   // create the table
   // SQL also lives in automation.py.in. If you change this SQL change that
   // one too
-  rv =
-      mDBConn->ExecuteSimpleSQL(NS_LITERAL_CSTRING("CREATE TABLE moz_perms ("
-                                                   " id INTEGER PRIMARY KEY"
-                                                   ",origin TEXT"
-                                                   ",type TEXT"
-                                                   ",permission INTEGER"
-                                                   ",expireType INTEGER"
-                                                   ",expireTime INTEGER"
-                                                   ",modificationTime INTEGER"
-                                                   ")"));
+  rv = mDBConn->ExecuteSimpleSQL(
+      NS_LITERAL_CSTRING("CREATE TABLE moz_perms ("
+                         " id INTEGER PRIMARY KEY"
+                         ",origin TEXT"
+                         ",type TEXT"
+                         ",permission INTEGER"
+                         ",expireType INTEGER"
+                         ",expireTime INTEGER"
+                         ",modificationTime INTEGER"
+                         ",hasFirstPartyDomain INTEGER"
+                         ")"));
   if (NS_FAILED(rv)) return rv;
 
   // We also create a legacy V4 table, for backwards compatability,
@@ -1722,6 +1740,7 @@ nsresult nsPermissionManager::CreateTable() {
                          ",expireType INTEGER"
                          ",expireTime INTEGER"
                          ",modificationTime INTEGER"
+                         ",hasFirstPartyDomain INTEGER"
                          ",isInBrowserElement INTEGER"
                          ")"));
 }
@@ -1783,15 +1802,21 @@ nsPermissionManager::AddFromPrincipal(nsIPrincipal* aPrincipal,
   // A modificationTime of zero will cause AddInternal to use now().
   int64_t modificationTime = 0;
 
+  // first party domain is not stripped in nsIPrincipal.
+  bool hasFirstPartyDomain = true;  // xeon: TODO
+  MOZ_ASSERT(!aPrincipal->OriginAttributesRef().mFirstPartyDomain.IsEmpty());
+
   return AddInternal(aPrincipal, aType, aPermission, 0, aExpireType,
-                     aExpireTime, modificationTime, eNotify, eWriteToDB);
+                     aExpireTime, modificationTime, hasFirstPartyDomain,
+                     eNotify, eWriteToDB);
 }
 
 nsresult nsPermissionManager::AddInternal(
     nsIPrincipal* aPrincipal, const nsACString& aType, uint32_t aPermission,
     int64_t aID, uint32_t aExpireType, int64_t aExpireTime,
-    int64_t aModificationTime, NotifyOperationType aNotifyOperation,
-    DBOperationType aDBOperation, const bool aIgnoreSessionPermissions) {
+    int64_t aModificationTime, bool aHasFirstPartyDomain,
+    NotifyOperationType aNotifyOperation, DBOperationType aDBOperation,
+    const bool aIgnoreSessionPermissions) {
   nsAutoCString origin;
   nsresult rv = GetOriginFromPrincipal(aPrincipal, origin);
   NS_ENSURE_SUCCESS(rv, rv);
@@ -1912,7 +1937,7 @@ nsresult nsPermissionManager::AddInternal(
 
       if (aDBOperation == eWriteToDB && IsPersistentExpire(aExpireType)) {
         UpdateDB(op, mStmtInsert, id, origin, aType, aPermission, aExpireType,
-                 aExpireTime, aModificationTime);
+                 aExpireTime, aModificationTime, aHasFirstPartyDomain);
       }
 
       if (aNotifyOperation == eNotify) {
@@ -1950,7 +1975,7 @@ nsresult nsPermissionManager::AddInternal(
         // We care only about the id here so we pass dummy values for all other
         // parameters.
         UpdateDB(op, mStmtDelete, id, EmptyCString(), EmptyCString(), 0,
-                 nsIPermissionManager::EXPIRE_NEVER, 0, 0);
+                 nsIPermissionManager::EXPIRE_NEVER, 0, 0, false);
 
       if (aNotifyOperation == eNotify) {
         NotifyObserversWithPermission(
@@ -2008,7 +2033,8 @@ nsresult nsPermissionManager::AddInternal(
         // expireType/expireTime/modificationTime here. We pass dummy values for
         // all other parameters.
         UpdateDB(op, mStmtUpdate, id, EmptyCString(), EmptyCString(),
-                 aPermission, aExpireType, aExpireTime, aModificationTime);
+                 aPermission, aExpireType, aExpireTime, aModificationTime,
+                 aHasFirstPartyDomain);
 
       if (aNotifyOperation == eNotify) {
         NotifyObserversWithPermission(aPrincipal, mTypeArray[typeIndex],
@@ -2056,7 +2082,8 @@ nsresult nsPermissionManager::AddInternal(
       // If requested, create the entry in the DB.
       if (aDBOperation == eWriteToDB && IsPersistentExpire(aExpireType)) {
         UpdateDB(eOperationAdding, mStmtInsert, id, origin, aType, aPermission,
-                 aExpireType, aExpireTime, aModificationTime);
+                 aExpireType, aExpireTime, aModificationTime,
+                 aHasFirstPartyDomain);
       }
 
       if (aNotifyOperation == eNotify) {
@@ -2100,7 +2127,7 @@ nsPermissionManager::RemoveFromPrincipal(nsIPrincipal* aPrincipal,
 
   // AddInternal() handles removal, just let it do the work
   return AddInternal(aPrincipal, aType, nsIPermissionManager::UNKNOWN_ACTION, 0,
-                     nsIPermissionManager::EXPIRE_NEVER, 0, 0, eNotify,
+                     nsIPermissionManager::EXPIRE_NEVER, 0, 0, false, eNotify,
                      eWriteToDB);
 }
 
@@ -2160,7 +2187,7 @@ nsresult nsPermissionManager::RemovePermissionEntries(T aCondition) {
   for (auto& i : array) {
     // AddInternal handles removal, so let it do the work...
     AddInternal(i.first(), i.second(), nsIPermissionManager::UNKNOWN_ACTION, 0,
-                nsIPermissionManager::EXPIRE_NEVER, 0, 0,
+                nsIPermissionManager::EXPIRE_NEVER, 0, 0, false,
                 nsPermissionManager::eNotify, nsPermissionManager::eWriteToDB);
   }
   // now re-import any defaults as they may now be required if we just deleted
@@ -2475,6 +2502,7 @@ nsPermissionManager::GetPermissionHashKey(nsIPrincipal* aPrincipal,
     return nullptr;
   }
 
+  // xeon: TODO
   PermissionHashKey* entry = mPermissionTable.GetEntry(key);
 
   if (entry) {
@@ -2520,6 +2548,7 @@ nsPermissionManager::GetPermissionHashKey(nsIURI* aURI,
                                           const nsACString& aOriginNoSuffix,
                                           uint32_t aType,
                                           bool aExactHostMatch) {
+  // xeon: TODO
   MOZ_ASSERT(aURI || !aOriginNoSuffix.IsEmpty());
   MOZ_ASSERT_IF(aURI, aOriginNoSuffix.IsEmpty());
 
@@ -2791,7 +2820,7 @@ nsresult nsPermissionManager::RemovePermissionsWithAttributes(
 
   for (auto& i : permissions) {
     AddInternal(i.first(), i.second(), nsIPermissionManager::UNKNOWN_ACTION, 0,
-                nsIPermissionManager::EXPIRE_NEVER, 0, 0,
+                nsIPermissionManager::EXPIRE_NEVER, 0, 0, false,
                 nsPermissionManager::eNotify, nsPermissionManager::eWriteToDB);
   }
 
@@ -2868,7 +2897,7 @@ nsresult nsPermissionManager::Read() {
   nsCOMPtr<mozIStorageStatement> stmt;
   rv = mDBConn->CreateStatement(
       NS_LITERAL_CSTRING("SELECT id, origin, type, permission, expireType, "
-                         "expireTime, modificationTime "
+                         "expireTime, modificationTime, hasFirstPartyDomain "
                          "FROM moz_perms"),
       getter_AddRefs(stmt));
   NS_ENSURE_SUCCESS(rv, rv);
@@ -2879,6 +2908,7 @@ nsresult nsPermissionManager::Read() {
   uint32_t expireType;
   int64_t expireTime;
   int64_t modificationTime;
+  bool hasFirstPartyDomain;
   bool hasResult;
   bool readError = false;
 
@@ -2907,6 +2937,8 @@ nsresult nsPermissionManager::Read() {
     expireTime = stmt->AsInt64(5);
     modificationTime = stmt->AsInt64(6);
 
+    hasFirstPartyDomain = stmt->AsInt32(7);
+
     nsCOMPtr<nsIPrincipal> principal;
     nsresult rv = GetPrincipalFromOrigin(origin, getter_AddRefs(principal));
     if (NS_FAILED(rv)) {
@@ -2915,7 +2947,8 @@ nsresult nsPermissionManager::Read() {
     }
 
     rv = AddInternal(principal, type, permission, id, expireType, expireTime,
-                     modificationTime, eDontNotify, eNoDBOperation);
+                     modificationTime, hasFirstPartyDomain, eDontNotify,
+                     eNoDBOperation);
     if (NS_FAILED(rv)) {
       readError = true;
       continue;
@@ -3069,9 +3102,14 @@ nsresult nsPermissionManager::_DoImport(nsIInputStream* inputStream,
       // 0, which AddInternal will convert to now()
       int64_t modificationTime = 0;
 
-      error = AddInternal(principal, lineArray[1], permission, id,
-                          nsIPermissionManager::EXPIRE_NEVER, 0,
-                          modificationTime, eDontNotify, operation);
+      // first party domain is not stripped in GetPrincipalFromOrigin.
+      bool hasFirstPartyDomain = true;
+      MOZ_ASSERT(!principal->OriginAttributesRef().mFirstPartyDomain.IsEmpty());
+
+      error =
+          AddInternal(principal, lineArray[1], permission, id,
+                      nsIPermissionManager::EXPIRE_NEVER, 0, modificationTime,
+                      hasFirstPartyDomain, eDontNotify, operation);
       if (NS_FAILED(error)) {
         NS_WARNING("There was a problem importing an origin permission");
       }
@@ -3085,7 +3123,8 @@ nsresult nsPermissionManager::_DoImport(nsIInputStream* inputStream,
 void nsPermissionManager::UpdateDB(
     OperationType aOp, mozIStorageAsyncStatement* aStmt, int64_t aID,
     const nsACString& aOrigin, const nsACString& aType, uint32_t aPermission,
-    uint32_t aExpireType, int64_t aExpireTime, int64_t aModificationTime) {
+    uint32_t aExpireType, int64_t aExpireTime, int64_t aModificationTime,
+    bool aHasFirstPartyDomain) {
   ENSURE_NOT_CHILD_PROCESS_NORET;
 
   nsresult rv;
@@ -3114,6 +3153,9 @@ void nsPermissionManager::UpdateDB(
       if (NS_FAILED(rv)) break;
 
       rv = aStmt->BindInt64ByIndex(6, aModificationTime);
+      if (NS_FAILED(rv)) break;
+
+      rv = aStmt->BindInt32ByIndex(7, aHasFirstPartyDomain);
       break;
     }
 
@@ -3136,6 +3178,9 @@ void nsPermissionManager::UpdateDB(
       if (NS_FAILED(rv)) break;
 
       rv = aStmt->BindInt64ByIndex(4, aModificationTime);
+      if (NS_FAILED(rv)) break;
+
+      rv = aStmt->BindInt32ByIndex(5, aHasFirstPartyDomain);
       break;
     }
 
@@ -3208,6 +3253,7 @@ nsPermissionManager::UpdateExpireTime(nsIPrincipal* aPrincipal,
 NS_IMETHODIMP
 nsPermissionManager::GetPermissionsWithKey(const nsACString& aPermissionKey,
                                            nsTArray<IPC::Permission>& aPerms) {
+  // xeon: here
   aPerms.Clear();
   if (NS_WARN_IF(XRE_IsContentProcess())) {
     return NS_ERROR_NOT_AVAILABLE;
@@ -3291,9 +3337,11 @@ nsPermissionManager::SetPermissionsWithKey(const nsACString& aPermissionKey,
     // reads nor writes, nor removes them based on the date - so 0 (which
     // will end up as now()) is fine.
     uint64_t modificationTime = 0;
+    bool hasFirstPartyDomain = true;  // xeon: TODO
+    MOZ_ASSERT(!principal->OriginAttributesRef().mFirstPartyDomain.IsEmpty());
     AddInternal(principal, perm.type, perm.capability, 0, perm.expireType,
-                perm.expireTime, modificationTime, eNotify, eNoDBOperation,
-                true /* ignoreSessionPermissions */);
+                perm.expireTime, modificationTime, hasFirstPartyDomain, eNotify,
+                eNoDBOperation, true /* ignoreSessionPermissions */);
   }
   return NS_OK;
 }

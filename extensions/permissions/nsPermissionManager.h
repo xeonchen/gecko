@@ -176,6 +176,7 @@ class nsPermissionManager final : public nsIPermissionManager,
   nsresult AddInternal(nsIPrincipal* aPrincipal, const nsACString& aType,
                        uint32_t aPermission, int64_t aID, uint32_t aExpireType,
                        int64_t aExpireTime, int64_t aModificationTime,
+                       bool aHasFirstPartyDomain,
                        NotifyOperationType aNotifyOperation,
                        DBOperationType aDBOperation,
                        const bool aIgnoreSessionPermissions = false);
@@ -487,7 +488,7 @@ class nsPermissionManager final : public nsIPermissionManager,
                        int64_t aID, const nsACString& aOrigin,
                        const nsACString& aType, uint32_t aPermission,
                        uint32_t aExpireType, int64_t aExpireTime,
-                       int64_t aModificationTime);
+                       int64_t aModificationTime, bool aHasFirstPartyDomain);
 
   /**
    * This method removes all permissions modified after the specified time.

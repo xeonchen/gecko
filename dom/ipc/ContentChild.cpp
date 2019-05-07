@@ -2557,10 +2557,13 @@ mozilla::ipc::IPCResult ContentChild::RecvAddPermission(
   // child processes don't care about modification time.
   int64_t modificationTime = 0;
 
+  bool hasFirstPartyDomain = true;  // xeon: TODO
+
   permissionManager->AddInternal(
       principal, nsCString(permission.type), permission.capability, 0,
       permission.expireType, permission.expireTime, modificationTime,
-      nsPermissionManager::eNotify, nsPermissionManager::eNoDBOperation);
+      hasFirstPartyDomain, nsPermissionManager::eNotify,
+      nsPermissionManager::eNoDBOperation);
 
   return IPC_OK();
 }
