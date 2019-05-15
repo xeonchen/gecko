@@ -43,6 +43,8 @@ struct PRFileDesc;
 struct BrotliDecoderStateStruct;
 #endif
 
+class ZipArchiveLogger;
+
 /**
  * This file defines some of the basic structures used by libjar to
  * read Zip files. It makes use of zlib in order to do the decompression.
@@ -230,6 +232,9 @@ class nsZipArchive final {
 
   // file URI, for logging
   nsCString mURI;
+
+  // logger handle
+  RefPtr<ZipArchiveLogger> mLogger;
 
  private:
   //--- private methods ---

@@ -78,10 +78,52 @@ static uint16_t xtoint(const uint8_t* ii);
 static uint32_t xtolong(const uint8_t* ll);
 static uint32_t HashName(const char* aName, uint16_t nameLen);
 
-class ZipArchiveLogger {
+/**
+ * A Singleton mixed-in with reference counted. The Instance will be destroyed
+ * when ref-count is down to zero.
+ * To avoid vtable, there's no virtual destructor in the class, therefore using
+ * public inheritance is not expected.
+ */
+template <typename T>
+class RefCountedSingletonMixIn {
+ protected:
+  static already_AddRefed<T> Instance() {
+    RefPtr<T> inst(sInstance);
+
+    if (!inst) {
+      inst = T::Create();
+      // Make sure sInstance is still nullptr, otherwise different instances
+      // might be returned.
+      if (!sInstance.compareExchange(nullptr, inst)) {
+        inst = sInstance;
+      }
+    }
+
+    return inst.forget();
+  }
+
+  ~RefCountedSingletonMixIn() { sInstance = nullptr; }
+
+ private:
+  // A weak pointer points to current living instance, it will be cleared in
+  // the destructor.
+  static Atomic<T*> MOZ_NON_OWNING_REF sInstance;
+};
+template <typename T>
+Atomic<T*> RefCountedSingletonMixIn<T>::sInstance;
+
+class ZipArchiveLogger final
+    : private RefCountedSingletonMixIn<ZipArchiveLogger> {
+  NS_INLINE_DECL_REFCOUNTING(ZipArchiveLogger)
+
+  // For ZipArchiveLogger::Create();
+  friend RefCountedSingletonMixIn<ZipArchiveLogger>;
+
  public:
+  using RefCountedSingletonMixIn<ZipArchiveLogger>::Instance;
+
   void Init(const char* env) {
-    if (!fd) {
+    if (!mFd) {
       nsCOMPtr<nsIFile> logFile;
       nsresult rv = NS_NewLocalFile(NS_ConvertUTF8toUTF16(env), false,
                                     getter_AddRefs(logFile));
@@ -110,39 +152,35 @@ class ZipArchiveLogger {
                                      0644, &file);
       if (NS_FAILED(rv)) return;
 #endif
-      fd = file;
+      mFd.reset(file);
     }
   }
 
   void Write(const nsACString& zip, const char* entry) const {
-    if (fd) {
+    if (mFd) {
       nsCString buf(zip);
       buf.Append(' ');
       buf.Append(entry);
       buf.Append('\n');
-      PR_Write(fd, buf.get(), buf.Length());
-    }
-  }
-
-  void AddRef() {
-    MOZ_ASSERT(refCnt >= 0);
-    ++refCnt;
-  }
-
-  void Release() {
-    MOZ_ASSERT(refCnt > 0);
-    if ((0 == --refCnt) && fd) {
-      PR_Close(fd);
-      fd = nullptr;
+      PR_Write(mFd.get(), buf.get(), buf.Length());
     }
   }
 
  private:
-  int refCnt;
-  PRFileDesc* fd;
-};
+  ZipArchiveLogger() = default;
+  ~ZipArchiveLogger() = default;
 
-static ZipArchiveLogger zipLog;
+  static already_AddRefed<ZipArchiveLogger> Create() {
+    RefPtr<ZipArchiveLogger> instance(new ZipArchiveLogger());
+    return instance.forget();
+  }
+
+  // Auto-closed PRFileDesc
+  struct PR_CloseDelete {
+    void operator()(PRFileDesc* aPtr) const { PR_Close(aPtr); }
+  };
+  UniquePtr<PRFileDesc, PR_CloseDelete> mFd;
+};
 
 //***********************************************************
 // For every inflation the following allocations are done:
@@ -340,7 +378,7 @@ nsresult nsZipArchive::OpenArchive(nsZipHandle* aZipHandle, PRFileDesc* aFd) {
     if (aZipHandle->mFile && XRE_IsParentProcess()) {
       static char* env = PR_GetEnv("MOZ_JAR_LOG_FILE");
       if (env) {
-        zipLog.Init(env);
+        mLogger->Init(env);
         // We only log accesses in jar/zip archives within the NS_GRE_DIR
         // and/or the APK on Android. For the former, we log the archive path
         // relative to NS_GRE_DIR, and for the latter, the nested-archive
@@ -474,7 +512,7 @@ nsZipItem* nsZipArchive::GetItem(const char* aEntryName) {
         // Successful GetItem() is a good indicator that the file is about to be
         // read
         if (mURI.Length()) {
-          zipLog.Write(mURI, aEntryName);
+          mLogger->Write(mURI, aEntryName);
         }
         return item;  //-- found it
       }
@@ -876,8 +914,9 @@ nsZipArchive::nsZipArchive()
     : mRefCnt(0),
       mCommentPtr(nullptr),
       mCommentLen(0),
-      mBuiltSynthetics(false) {
-  zipLog.AddRef();
+      mBuiltSynthetics(false),
+      mLogger(ZipArchiveLogger::Instance()) {
+  MOZ_ASSERT(mLogger);
 
   // initialize the table to nullptr
   memset(mFiles, 0, sizeof(mFiles));
@@ -888,8 +927,6 @@ NS_IMPL_RELEASE(nsZipArchive)
 
 nsZipArchive::~nsZipArchive() {
   CloseArchive();
-
-  zipLog.Release();
 }
 
 //------------------------------------------
