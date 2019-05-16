@@ -114,7 +114,7 @@ Atomic<T*> RefCountedSingletonMixIn<T>::sInstance;
 
 class ZipArchiveLogger final
     : private RefCountedSingletonMixIn<ZipArchiveLogger> {
-  NS_INLINE_DECL_REFCOUNTING(ZipArchiveLogger)
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(ZipArchiveLogger)
 
   // For ZipArchiveLogger::Create();
   friend RefCountedSingletonMixIn<ZipArchiveLogger>;
@@ -156,13 +156,24 @@ class ZipArchiveLogger final
     }
   }
 
-  void Write(const nsACString& zip, const char* entry) const {
+  void Write(const nsACString& zip, const char* entry) {
     if (mFd) {
       nsCString buf(zip);
       buf.Append(' ');
       buf.Append(entry);
       buf.Append('\n');
-      PR_Write(mFd.get(), buf.get(), buf.Length());
+
+      RefPtr<ZipArchiveLogger> self(this);
+      nsCOMPtr<nsIRunnable> runnable =
+          NS_NewRunnableFunction("ZipArchiveLogger::Write", [self, buf]() {
+            PR_Write(self->mFd.get(), buf.get(), buf.Length());
+          });
+
+      if (NS_IsMainThread()) {
+        runnable->Run();
+      } else {
+        NS_DispatchToMainThread(runnable);
+      }
     }
   }
 
