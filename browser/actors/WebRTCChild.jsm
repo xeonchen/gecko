@@ -10,6 +10,7 @@ const {Services} = ChromeUtils.import("resource://gre/modules/Services.jsm");
 const {XPCOMUtils} = ChromeUtils.import("resource://gre/modules/XPCOMUtils.jsm");
 const {ActorChild} = ChromeUtils.import("resource://gre/modules/ActorChild.jsm");
 const {AppConstants} = ChromeUtils.import("resource://gre/modules/AppConstants.jsm");
+const {E10SUtils} = ChromeUtils.import("resource://gre/modules/E10SUtils.jsm");
 XPCOMUtils.defineLazyServiceGetter(this, "MediaManagerService",
                                    "@mozilla.org/mediaManagerService;1",
                                    "nsIMediaManagerService");
@@ -220,6 +221,9 @@ function prompt(aContentWindow, aWindowID, aCallID, aConstraints, aDevices, aSec
   let isThirdPartyOrigin =
     aContentWindow.document.location.origin != aContentWindow.top.document.location.origin;
 
+  let principal =
+    E10SUtils.serializePrincipal(aContentWindow.document.nodePrincipal);
+
   // WebRTC prompts have a bunch of special requirements, such as being able to
   // grant two permissions (microphone and camera), selecting devices and showing
   // a screen sharing preview. All this could have probably been baked into
@@ -233,6 +237,7 @@ function prompt(aContentWindow, aWindowID, aCallID, aConstraints, aDevices, aSec
     callID: aCallID,
     windowID: aWindowID,
     origin: aContentWindow.origin,
+    principal,
     documentURI: aContentWindow.document.documentURI,
     secure: aSecure,
     isHandlingUserInput: aIsHandlingUserInput,

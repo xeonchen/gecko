@@ -6,6 +6,7 @@
 
 var EXPORTED_SYMBOLS = ["webrtcUI"];
 
+const {E10SUtils} = ChromeUtils.import("resource://gre/modules/E10SUtils.jsm");
 const {EventEmitter} = ChromeUtils.import("resource:///modules/syncedtabs/EventEmitter.jsm");
 const {Services} = ChromeUtils.import("resource://gre/modules/Services.jsm");
 const {XPCOMUtils} = ChromeUtils.import("resource://gre/modules/XPCOMUtils.jsm");
@@ -408,7 +409,7 @@ function prompt(aBrowser, aRequest) {
   let { audioDevices, videoDevices, sharingScreen, sharingAudio,
         requestTypes } = aRequest;
 
-  let principal = aBrowser.contentPrincipal;
+  let principal = E10SUtils.deserializePrincipal(aRequest.principal);
 
   // If the user has already denied access once in this tab,
   // deny again without even showing the notification icon.
