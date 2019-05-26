@@ -2477,8 +2477,8 @@ var BrowserApp = {
               if (PrivateBrowsingUtils.isBrowserPrivate(browser)) {
                 PrivateBrowsingUtils.addToTrackingAllowlist(normalizedUrl);
               } else {
-                Services.perms.add(
-                  normalizedUrl,
+                Services.perms.addFromPrincipal(
+                  browser.contentPrincipal,
                   "trackingprotection",
                   Services.perms.ALLOW_ACTION
                 );
@@ -2492,7 +2492,10 @@ var BrowserApp = {
               if (PrivateBrowsingUtils.isBrowserPrivate(browser)) {
                 PrivateBrowsingUtils.removeFromTrackingAllowlist(normalizedUrl);
               } else {
-                Services.perms.remove(normalizedUrl, "trackingprotection");
+                Services.perms.removeFromPrincipal(
+                  browser.contentPrincipal,
+                  "trackingprotection"
+                );
                 Telemetry.addData("TRACKING_PROTECTION_EVENTS", 2);
               }
             }
@@ -6416,8 +6419,8 @@ var PopupBlockerObserver = {
       return;
     }
 
-    let result = Services.perms.testExactPermission(
-      BrowserApp.selectedBrowser.currentURI,
+    let result = Services.perms.testExactPermissionFromPrincipal(
+      BrowserApp.selectedBrowser.contentPrincipal,
       "popup"
     );
     if (result == Ci.nsIPermissionManager.DENY_ACTION) {
@@ -6481,9 +6484,9 @@ var PopupBlockerObserver = {
   },
 
   allowPopupsForSite: function allowPopupsForSite(aAllow) {
-    let currentURI = BrowserApp.selectedBrowser.currentURI;
-    Services.perms.add(
-      currentURI,
+    let principal = BrowserApp.selectedBrowser.contentPrincipal;
+    Services.perms.addFromPrincipal(
+      principal,
       "popup",
       aAllow
         ? Ci.nsIPermissionManager.ALLOW_ACTION
