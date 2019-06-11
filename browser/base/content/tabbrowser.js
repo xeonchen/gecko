@@ -1592,6 +1592,7 @@
       var aName;
       var aCsp;
       var aSkipLoad;
+      var aIsFirstLoad;
       if (
         arguments.length == 2 &&
         typeof arguments[1] == "object" &&
@@ -1623,6 +1624,7 @@
         aName = params.name;
         aCsp = params.csp;
         aSkipLoad = params.skipLoad;
+        aIsFirstLoad = params.isFirstLoad;
       }
 
       // all callers of loadOneTab need to pass a valid triggeringPrincipal.
@@ -1664,6 +1666,7 @@
         name: aName,
         csp: aCsp,
         skipLoad: aSkipLoad,
+        isFirstLoad: aIsFirstLoad,
       });
       if (!bgLoad) {
         this.selectedTab = tab;
@@ -2566,6 +2569,7 @@
         csp,
         skipLoad,
         batchInsertingTabs,
+        isFirstLoad,
       } = {}
     ) {
       // all callers of addTab that pass a params object need to pass
@@ -2833,6 +2837,9 @@
           }
           if (!allowInheritPrincipal) {
             flags |= Ci.nsIWebNavigation.LOAD_FLAGS_DISALLOW_INHERIT_PRINCIPAL;
+          }
+          if (isFirstLoad) {
+            flags |= Ci.nsIWebNavigation.LOAD_FLAGS_FIRST_LOAD;
           }
           try {
             b.loadURI(aURI, {

@@ -171,7 +171,7 @@ interface nsIBrowserDOMWindow : nsISupports
   openURIInFrame(in nsIURI aURI, in nsIOpenURIInFrameParams params,
                  in short aWhere, in long aFlags,
                  in unsigned long long aNextRemoteTabId,
-                 in AString aName);
+                 in AString aName, in short aIsFirstLoad);
 
   /**
    * @param  aWindow the window to test.

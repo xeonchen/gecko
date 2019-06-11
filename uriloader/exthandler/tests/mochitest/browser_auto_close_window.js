@@ -100,6 +100,41 @@ add_task(async function target_blank() {
   });
 });
 
+// Given a browser pointing to download_page.html, clicks on the link that
+// opens with target="_blank" and has no opener and ensures that we
+// automatically open and close that tab.
+async function testNewTabNoOpener(browser) {
+  let dialogAppeared = promiseHelperAppDialog();
+  let tabOpened = BrowserTestUtils.waitForEvent(
+    gBrowser.tabContainer,
+    "TabOpen"
+  ).then(event => {
+    return [event.target, BrowserTestUtils.waitForTabClosing(event.target)];
+  });
+
+  await BrowserTestUtils.synthesizeMouseAtCenter(
+    "#target_blank_no_opener",
+    {},
+    browser
+  );
+
+  let windowContext = await dialogAppeared;
+  is(windowContext, browser.ownerGlobal, "got the right windowContext");
+  let [tab, closingPromise] = await tabOpened;
+  await closingPromise;
+  is(tab.linkedBrowser, null, "tab was opened and closed");
+}
+
+add_task(async function target_blank_no_opener() {
+  // Tests that a link with target=_blank and no opener opens a new tab
+  // and closes it, returning the window that we're using for navigation.
+  await BrowserTestUtils.withNewTab({ gBrowser, url: PAGE_URL }, async function(
+    browser
+  ) {
+    await testNewTabNoOpener(browser);
+  });
+});
+
 add_task(async function new_window() {
   // Tests that a link that forces us to open a new window (by specifying a
   // width and a height in window.open) opens a new window for the load,

@@ -4830,7 +4830,7 @@ mozilla::ipc::IPCResult ContentParent::CommonCreateWindow(
     nsresult& aResult, nsCOMPtr<nsIRemoteTab>& aNewRemoteTab,
     bool* aWindowIsNew, int32_t& aOpenLocation,
     nsIPrincipal* aTriggeringPrincipal, nsIReferrerInfo* aReferrerInfo,
-    bool aLoadURI, nsIContentSecurityPolicy* aCsp)
+    bool aLoadURI, nsIContentSecurityPolicy* aCsp, const bool& aIsFirstLoad)
 
 {
   // The content process should never be in charge of computing whether or
@@ -4939,7 +4939,7 @@ mozilla::ipc::IPCResult ContentParent::CommonCreateWindow(
     if (aLoadURI) {
       aResult = browserDOMWin->OpenURIInFrame(
           aURIToLoad, params, aOpenLocation, nsIBrowserDOMWindow::OPEN_NEW,
-          aNextRemoteTabId, aName, getter_AddRefs(el));
+          aNextRemoteTabId, aName, aIsFirstLoad, getter_AddRefs(el));
     } else {
       aResult = browserDOMWin->CreateContentWindowInFrame(
           aURIToLoad, params, aOpenLocation, nsIBrowserDOMWindow::OPEN_NEW,
@@ -5092,7 +5092,7 @@ mozilla::ipc::IPCResult ContentParent::RecvCreateWindow(
       aPositionSpecified, aSizeSpecified, uriToLoad, aFeatures, aFullZoom,
       nextRemoteTabId, VoidString(), rv, newRemoteTab, &cwi.windowOpened(),
       openLocation, aTriggeringPrincipal, aReferrerInfo,
-      /* aLoadUri = */ false, aCsp);
+      /* aLoadUri = */ false, aCsp, /*aIsFirstLoad*/ false);
   if (!ipcResult) {
     return ipcResult;
   }
@@ -5127,7 +5127,7 @@ mozilla::ipc::IPCResult ContentParent::RecvCreateWindowInDifferentProcess(
     const bool& aSizeSpecified, const Maybe<URIParams>& aURIToLoad,
     const nsCString& aFeatures, const float& aFullZoom, const nsString& aName,
     nsIPrincipal* aTriggeringPrincipal, nsIContentSecurityPolicy* aCsp,
-    nsIReferrerInfo* aReferrerInfo) {
+    const bool& aIsFirstLoad, nsIReferrerInfo* aReferrerInfo) {
   MOZ_DIAGNOSTIC_ASSERT(!nsContentUtils::IsSpecialName(aName));
 
   nsCOMPtr<nsIRemoteTab> newRemoteTab;
@@ -5171,7 +5171,7 @@ mozilla::ipc::IPCResult ContentParent::RecvCreateWindowInDifferentProcess(
       aPositionSpecified, aSizeSpecified, uriToLoad, aFeatures, aFullZoom,
       /* aNextRemoteTabId = */ 0, aName, rv, newRemoteTab, &windowIsNew,
       openLocation, aTriggeringPrincipal, aReferrerInfo,
-      /* aLoadUri = */ true, aCsp);
+      /* aLoadUri = */ true, aCsp, aIsFirstLoad);
   if (!ipcResult) {
     return ipcResult;
   }

@@ -49,13 +49,13 @@ BrowsingContext* MaybeCloseWindowHelper::MaybeCloseWindow() {
     if (opener && !opener->IsDiscarded()) {
       mBCToClose = mBrowsingContext;
       mBrowsingContext = opener;
-
-      // Now close the old window.  Do it on a timer so that we don't run
-      // into issues trying to close the window before it has fully opened.
-      NS_ASSERTION(!mTimer, "mTimer was already initialized once!");
-      NS_NewTimerWithCallback(getter_AddRefs(mTimer), this, 0,
-                              nsITimer::TYPE_ONE_SHOT);
     }
+
+    // Now close the old window.  Do it on a timer so that we don't run
+    // into issues trying to close the window before it has fully opened.
+    NS_ASSERTION(!mTimer, "mTimer was already initialized once!");
+    NS_NewTimerWithCallback(getter_AddRefs(mTimer), this, 0,
+                            nsITimer::TYPE_ONE_SHOT);
   }
   return mBrowsingContext;
 }

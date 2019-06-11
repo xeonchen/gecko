@@ -6148,7 +6148,8 @@ nsBrowserAccess.prototype = {
     aNextRemoteTabId = 0,
     aName = "",
     aCsp = null,
-    aSkipLoad = false
+    aSkipLoad = false,
+    aIsFirstLoad = false
   ) {
     let win, needToFocusWin;
 
@@ -6188,6 +6189,7 @@ nsBrowserAccess.prototype = {
       name: aName,
       csp: aCsp,
       skipLoad: aSkipLoad,
+      isFirstLoad: aIsFirstLoad,
     });
     let browser = win.gBrowser.getBrowserForTab(tab);
 
@@ -6429,7 +6431,8 @@ nsBrowserAccess.prototype = {
     aWhere,
     aFlags,
     aNextRemoteTabId,
-    aName
+    aName,
+    aIsFirstLoad
   ) {
     return this.getContentWindowOrOpenURIInFrame(
       aURI,
@@ -6438,7 +6441,8 @@ nsBrowserAccess.prototype = {
       aFlags,
       aNextRemoteTabId,
       aName,
-      false
+      false,
+      aIsFirstLoad
     );
   },
 
@@ -6449,7 +6453,8 @@ nsBrowserAccess.prototype = {
     aFlags,
     aNextRemoteTabId,
     aName,
-    aSkipLoad
+    aSkipLoad,
+    aIsFirstLoad = false
   ) {
     if (aWhere != Ci.nsIBrowserDOMWindow.OPEN_NEWTAB) {
       dump("Error: openURIInFrame can only open in new tabs");
@@ -6477,7 +6482,8 @@ nsBrowserAccess.prototype = {
       aNextRemoteTabId,
       aName,
       aParams.csp,
-      aSkipLoad
+      aSkipLoad,
+      aIsFirstLoad
     );
   },
 

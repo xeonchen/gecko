@@ -955,10 +955,11 @@ nsresult ContentChild::ProvideWindowCommon(
 
     MOZ_DIAGNOSTIC_ASSERT(!nsContentUtils::IsSpecialName(name));
 
+    bool aIsFirstLoad = aLoadState->GetFirstLoadFlag();
     Unused << SendCreateWindowInDifferentProcess(
         aTabOpener, aChromeFlags, aCalledFromJS, aPositionSpecified,
         aSizeSpecified, uriToLoad, features, fullZoom, name,
-        triggeringPrincipal, csp, referrerInfo);
+        triggeringPrincipal, csp, aIsFirstLoad, referrerInfo);
 
     // We return NS_ERROR_ABORT, so that the caller knows that we've abandoned
     // the window open as far as it is concerned.

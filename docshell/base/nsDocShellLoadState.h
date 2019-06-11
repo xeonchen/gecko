@@ -54,6 +54,10 @@ class nsDocShellLoadState final {
 
   void SetReferrerInfo(nsIReferrerInfo* aReferrerInfo);
 
+  void SetFirstLoadFlag(bool aIsFirstLoad);
+
+  bool GetFirstLoadFlag() const;
+
   nsIURI* URI() const;
 
   void SetURI(nsIURI* aURI);
@@ -251,6 +255,8 @@ class nsDocShellLoadState final {
   // isSome() on mozilla::Maybe.)
   nsCOMPtr<nsIURI> mResultPrincipalURI;
   bool mResultPrincipalURIIsSome;
+
+  bool mIsFirstLoad;
 
   // The principal of the load, that is, the entity responsible for causing the
   // load to occur. In most cases the referrer and the triggeringPrincipal's URI

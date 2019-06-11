@@ -25,6 +25,7 @@
 nsDocShellLoadState::nsDocShellLoadState(nsIURI* aURI)
     : mURI(aURI),
       mResultPrincipalURIIsSome(false),
+      mIsFirstLoad(false),
       mKeepResultPrincipalURIIfSet(false),
       mLoadReplace(false),
       mInheritPrincipal(false),
@@ -272,6 +273,12 @@ nsIReferrerInfo* nsDocShellLoadState::GetReferrerInfo() const {
 
 void nsDocShellLoadState::SetReferrerInfo(nsIReferrerInfo* aReferrerInfo) {
   mReferrerInfo = aReferrerInfo;
+}
+
+bool nsDocShellLoadState::GetFirstLoadFlag() const { return mIsFirstLoad; }
+
+void nsDocShellLoadState::SetFirstLoadFlag(bool aIsFirstLoad) {
+  mIsFirstLoad = aIsFirstLoad;
 }
 
 nsIURI* nsDocShellLoadState::URI() const { return mURI; }

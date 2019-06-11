@@ -1405,6 +1405,7 @@ parent:
       nsString aName,
       nsIPrincipal aTriggeringPrincipal,
       nsIContentSecurityPolicy aCsp,
+      bool aIsFirstLoad,
       nsIReferrerInfo aReferrerInfo);
 
     /**
