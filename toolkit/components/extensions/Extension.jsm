@@ -124,6 +124,10 @@ const CHILD_SHUTDOWN_TIMEOUT_MS = 8000;
 // Permissions that are only available to privileged extensions.
 const PRIVILEGED_PERMS = new Set(["mozillaAddons", "geckoViewAddons", "telemetry", "urlbar"]);
 
+function debug(msg) {
+  dump("[xeon]" + msg + "\n");
+}
+
 /**
  * Classify an individual permission from a webextension manifest
  * as a host/origin permission, an api permission, or a regular permission.
@@ -1564,6 +1568,7 @@ class Extension extends ExtensionData {
   }
 
   createPrincipal(uri = this.baseURI, originAttributes = {}) {
+    debug("originAttributes = " + JSON.stringify(originAttributes));
     return Services.scriptSecurityManager.createCodebasePrincipal(uri, originAttributes);
   }
 
@@ -1828,6 +1833,7 @@ class Extension extends ExtensionData {
       Services.perms.testPermissionFromPrincipal(principal, perm);
 
     const addUnlimitedStoragePermissions = () => {
+      debug("addUnlimitedStoragePermissions");
       // Set the indexedDB permission and a custom "WebExtensions-unlimitedStorage" to
       // remember that the permission hasn't been selected manually by the user.
       Services.perms.addFromPrincipal(principal, "WebExtensions-unlimitedStorage",
@@ -1842,8 +1848,10 @@ class Extension extends ExtensionData {
     // some way.
     if (reason !== "APP_STARTUP" && reason !== "APP_SHUTDOWN") {
       if (this.hasPermission("unlimitedStorage")) {
+        debug("case 1");
         addUnlimitedStoragePermissions();
       } else {
+        debug("case 2");
         // Remove the indexedDB permission if it has been enabled using the
         // unlimitedStorage WebExtensions permissions.
         Services.perms.removeFromPrincipal(principal, "WebExtensions-unlimitedStorage");
@@ -1853,6 +1861,7 @@ class Extension extends ExtensionData {
     } else if (reason === "APP_STARTUP" && this.hasPermission("unlimitedStorage") &&
                (testPermission("indexedDB") !== Services.perms.ALLOW_ACTION ||
                 testPermission("persistent-storage") !== Services.perms.ALLOW_ACTION)) {
+      debug("case3");
       // If the extension does have the unlimitedStorage permission, but the
       // expected site permissions are missing during the app startup, then
       // add them back (See Bug 1454192).
