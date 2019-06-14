@@ -33,6 +33,7 @@ const IDB_MIGRATE_RESULT_HISTOGRAM = "WEBEXT_STORAGE_LOCAL_IDB_MIGRATE_RESULT_CO
 // Whether or not the installed extensions should be migrated to the storage.local IndexedDB backend.
 const BACKEND_ENABLED_PREF = "extensions.webextensions.ExtensionStorageIDB.enabled";
 const IDB_MIGRATED_PREF_BRANCH = "extensions.webextensions.ExtensionStorageIDB.migrated";
+const FIRST_PARTY_ENABLED_PREF = "privacy.firstparty.isolate";
 
 var DataMigrationTelemetry = {
   initialized: false,
@@ -502,6 +503,8 @@ this.ExtensionStorageIDB = {
 
   init() {
     XPCOMUtils.defineLazyPreferenceGetter(this, "isBackendEnabled", BACKEND_ENABLED_PREF, false);
+    XPCOMUtils.defineLazyPreferenceGetter(this, "isFirstPartyEnabled",
+                                          FIRST_PARTY_ENABLED_PREF, false);
   },
 
   isMigratedExtension(extension) {
@@ -517,9 +520,13 @@ this.ExtensionStorageIDB = {
   },
 
   getStoragePrincipal(extension) {
-    return extension.createPrincipal(extension.baseURI, {
+    let originAttribute = {
       userContextId: WEBEXT_STORAGE_USER_CONTEXT_ID,
-    });
+    };
+    if (this.isFirstPartyEnabled) {
+      originAttribute.firstPartyDomain = extension.uuid;
+    }
+    return extension.createPrincipal(extension.baseURI, originAttribute);
   },
 
   /**

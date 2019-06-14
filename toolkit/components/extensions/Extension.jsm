@@ -89,6 +89,8 @@ XPCOMUtils.defineLazyPreferenceGetter(this, "processCount", "dom.ipc.processCoun
 XPCOMUtils.defineLazyPreferenceGetter(this, "allowPrivateBrowsingByDefault",
                                       "extensions.allowPrivateBrowsingByDefault", true);
 
+const FIRST_PARTY_ENABLED_PREF = "privacy.firstparty.isolate";
+
 var {
   GlobalManager,
   ParentAPIManager,
@@ -1426,7 +1428,10 @@ class Extension extends ExtensionData {
     this.version = addonData.version;
     this.baseURL = this.getURL("");
     this.baseURI = Services.io.newURI(this.baseURL).QueryInterface(Ci.nsIURL);
-    this.principal = this.createPrincipal();
+
+    this.updatePrincipal();
+    this.updatePrincipal = this.updatePrincipal.bind(this);
+    Services.prefs.addObserver(FIRST_PARTY_ENABLED_PREF, this.updatePrincipal);
 
     this.views = new Set();
     this._backgroundPageFrameLoader = null;
@@ -1826,6 +1831,19 @@ class Extension extends ExtensionData {
     return super.initLocale(locale);
   }
 
+  updatePrincipal() {
+    let isFirstPartyEnabled =
+      Services.prefs.getBoolPref(FIRST_PARTY_ENABLED_PREF, false);
+
+    if (isFirstPartyEnabled) {
+      this.principal =
+        this.createPrincipal(this.baseURI, { firstPartyDomain: this.uuid });
+    } else {
+      this.principal = this.createPrincipal();
+    }
+    this.updatePermissions(this.startupReason);
+  }
+
   updatePermissions(reason) {
     const {principal} = this;
 
@@ -2047,6 +2065,8 @@ class Extension extends ExtensionData {
     this.state = "Shutdown";
 
     this.hasShutdown = true;
+
+    Services.prefs.removeObserver(FIRST_PARTY_ENABLED_PREF, this.updatePrincipal);
 
     if (!this.policy) {
       return;
