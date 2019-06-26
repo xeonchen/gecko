@@ -32,6 +32,7 @@ namespace dom {
 static void ThrowExceptionValueIfSafe(JSContext* aCx,
                                       JS::Handle<JS::Value> exnVal,
                                       Exception* aOriginalException) {
+  printf_stderr("[xeon] %s\n", __func__);
   MOZ_ASSERT(aOriginalException);
 
   if (!exnVal.isObject()) {
@@ -70,6 +71,7 @@ static void ThrowExceptionValueIfSafe(JSContext* aCx,
 }
 
 void ThrowExceptionObject(JSContext* aCx, Exception* aException) {
+  printf_stderr("[xeon] %s\n", __func__);
   JS::Rooted<JS::Value> thrown(aCx);
 
   // If we stored the original thrown JS value in the exception
@@ -107,6 +109,7 @@ void ThrowExceptionObject(JSContext* aCx, Exception* aException) {
 }
 
 bool Throw(JSContext* aCx, nsresult aRv, const nsACString& aMessage) {
+  printf_stderr("[xeon] %s\n", __func__);
   if (aRv == NS_ERROR_UNCATCHABLE_EXCEPTION) {
     // Nuke any existing exception on aCx, to make sure we're uncatchable.
     JS_ClearPendingException(aCx);
@@ -142,6 +145,7 @@ bool Throw(JSContext* aCx, nsresult aRv, const nsACString& aMessage) {
 }
 
 void ThrowAndReport(nsPIDOMWindowInner* aWindow, nsresult aRv) {
+  printf_stderr("[xeon] %s\n", __func__);
   MOZ_ASSERT(aRv != NS_ERROR_UNCATCHABLE_EXCEPTION,
              "Doesn't make sense to report uncatchable exceptions!");
   AutoJSAPI jsapi;
@@ -154,6 +158,7 @@ void ThrowAndReport(nsPIDOMWindowInner* aWindow, nsresult aRv) {
 
 already_AddRefed<Exception> CreateException(nsresult aRv,
                                             const nsACString& aMessage) {
+  printf_stderr("[xeon] %s\n", __func__);
   // Do we use DOM exceptions for this error code?
   switch (NS_ERROR_GET_MODULE(aRv)) {
     case NS_ERROR_MODULE_DOM:
@@ -179,8 +184,11 @@ already_AddRefed<Exception> CreateException(nsresult aRv,
 }
 
 already_AddRefed<nsIStackFrame> GetCurrentJSStack(int32_t aMaxDepth) {
+  printf_stderr("[xeon] %s\n", __func__);
   // is there a current context available?
   JSContext* cx = nsContentUtils::GetCurrentJSContext();
+
+  printf_stderr("[xeon] IsSystemCaller = %d\n", nsContentUtils::IsSystemCaller(cx));
 
   if (!cx || !js::GetContextRealm(cx)) {
     return nullptr;
@@ -255,6 +263,7 @@ JSStackFrame::JSStackFrame(JS::Handle<JSObject*> aStack)
       mAsyncCallerInitialized(false),
       mCallerInitialized(false),
       mFormattedStackInitialized(false) {
+  // printf_stderr("[xeon] %s\n", __func__);
   MOZ_ASSERT(mStack);
   MOZ_ASSERT(JS::IsUnwrappedSavedFrame(mStack));
 
@@ -264,6 +273,7 @@ JSStackFrame::JSStackFrame(JS::Handle<JSObject*> aStack)
 }
 
 JSStackFrame::~JSStackFrame() {
+  // printf_stderr("[xeon] %s\n", __func__);
   UnregisterAndClear();
   mozilla::DropJSObjects(this);
 }
@@ -386,6 +396,7 @@ NS_IMETHODIMP JSStackFrame::GetFilenameXPCOM(JSContext* aCx,
 }
 
 void JSStackFrame::GetFilename(JSContext* aCx, nsAString& aFilename) {
+  // printf_stderr("[xeon] %s\n", __func__);
   if (!mStack) {
     aFilename.Truncate();
     return;
@@ -737,6 +748,7 @@ void JSStackFrame::ToString(JSContext* aCx, nsACString& _retval) {
 
 already_AddRefed<nsIStackFrame> CreateStack(JSContext* aCx,
                                             JS::StackCapture&& aCaptureMode) {
+  printf_stderr("[xeon] %s\n", __func__);
   JS::Rooted<JSObject*> stack(aCx);
   if (!JS::CaptureCurrentStack(aCx, &stack, std::move(aCaptureMode))) {
     return nullptr;

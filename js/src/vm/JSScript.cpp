@@ -3413,6 +3413,7 @@ bool ScriptSource::initFromOptions(JSContext* cx,
 }
 
 bool ScriptSource::setFilename(JSContext* cx, const char* filename) {
+  fprintf(stderr, "[xeon] %s = %s\n", __func__, filename);
   MOZ_ASSERT(!filename_);
   filename_ = DuplicateString(cx, filename);
   return filename_ != nullptr;
