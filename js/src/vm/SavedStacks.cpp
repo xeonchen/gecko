@@ -1285,7 +1285,7 @@ bool SavedFrame::toStringMethod(JSContext* cx, unsigned argc, Value* vp) {
 bool SavedStacks::saveCurrentStack(
     JSContext* cx, MutableHandleSavedFrame frame,
     JS::StackCapture&& capture /* = JS::StackCapture(JS::AllFrames()) */) {
-  fprintf(stderr, "[xeon] %s\n", __func__);
+  fprintf(stderr, "[xeon] %s:%d(%s)\n", __FILE__, __LINE__, __func__);
   MOZ_RELEASE_ASSERT(cx->realm());
   MOZ_DIAGNOSTIC_ASSERT(&cx->realm()->savedStacks() == this);
 
@@ -1373,7 +1373,7 @@ static inline bool captureIsSatisfied(JSContext* cx, JSPrincipals* principals,
 
 bool SavedStacks::insertFrames(JSContext* cx, MutableHandleSavedFrame frame,
                                JS::StackCapture&& capture) {
-  fprintf(stderr, "[xeon] %s\n", __func__);
+  fprintf(stderr, "[xeon] %s:%d(%s)\n", __FILE__, __LINE__, __func__);
   // In order to look up a cached SavedFrame object, we need to have its parent
   // SavedFrame, which means we need to walk the stack from oldest frame to
   // youngest. However, FrameIter walks the stack from youngest frame to
@@ -1471,8 +1471,8 @@ bool SavedStacks::insertFrames(JSContext* cx, MutableHandleSavedFrame frame,
     auto principals = iter.realm()->principals();
     MOZ_ASSERT_IF(framePtr && !iter.isWasm(), iter.pc());
 
-    // fprintf(stderr, "[xeon] location.source = ");
-    // location.source()->dump();
+    fprintf(stderr, "[xeon] location.source = ");
+    location.source()->dump();
     if (!stackChain.emplaceBack(location.source(), location.sourceId(),
                                 location.line(), location.column(), displayAtom,
                                 nullptr,  // asyncCause

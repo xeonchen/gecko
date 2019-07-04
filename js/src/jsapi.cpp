@@ -5825,7 +5825,7 @@ JS::FirstSubsumedFrame::FirstSubsumedFrame(
 JS_PUBLIC_API bool JS::CaptureCurrentStack(
     JSContext* cx, JS::MutableHandleObject stackp,
     JS::StackCapture&& capture /* = JS::StackCapture(JS::AllFrames()) */) {
-  fprintf(stderr, "[xeon] %s\n", __func__);
+  fprintf(stderr, "[xeon] %s:%d(%s)\n", __FILE__, __LINE__, __func__);
   AssertHeapIsIdle();
   CHECK_THREAD(cx);
   MOZ_RELEASE_ASSERT(cx->realm());

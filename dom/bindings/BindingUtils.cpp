@@ -126,7 +126,7 @@ uint16_t GetErrorArgCount(const ErrNum aErrorNumber) {
 
 void binding_detail::ThrowErrorMessage(JSContext* aCx,
                                        const unsigned aErrorNumber, ...) {
-  printf_stderr("[xeon] %s:%s\n", __FILE__, __func__);
+  printf_stderr("[xeon] %s:%d(%s)\n", __FILE__, __LINE__, __func__);
   va_list ap;
   va_start(ap, aErrorNumber);
   JS_ReportErrorNumberUTF8VA(aCx, GetErrorMessage, nullptr, aErrorNumber, ap);
@@ -240,7 +240,7 @@ bool TErrorResult<CleanupPolicy>::DeserializeMessage(const IPC::Message* aMsg,
 template <typename CleanupPolicy>
 void TErrorResult<CleanupPolicy>::SetPendingExceptionWithMessage(
     JSContext* aCx) {
-  printf_stderr("[xeon] %s:%s\n", __FILE__, __func__);
+  printf_stderr("[xeon] %s:%d(%s)\n", __FILE__, __LINE__, __func__);
   AssertInOwningThread();
   MOZ_ASSERT(mUnionState == HasMessage);
   MOZ_ASSERT(mExtra.mMessage,
@@ -278,7 +278,7 @@ void TErrorResult<CleanupPolicy>::ClearMessage() {
 template <typename CleanupPolicy>
 void TErrorResult<CleanupPolicy>::ThrowJSException(JSContext* cx,
                                                    JS::Handle<JS::Value> exn) {
-  printf_stderr("[xeon] %s:%s\n", __FILE__, __func__);
+  printf_stderr("[xeon] %s:%d(%s)\n", __FILE__, __LINE__, __func__);
   AssertInOwningThread();
   MOZ_ASSERT(mMightHaveUnreportedJSException,
              "Why didn't you tell us you planned to throw a JS exception?");
@@ -304,7 +304,7 @@ void TErrorResult<CleanupPolicy>::ThrowJSException(JSContext* cx,
 
 template <typename CleanupPolicy>
 void TErrorResult<CleanupPolicy>::SetPendingJSException(JSContext* cx) {
-  printf_stderr("[xeon] %s:%s\n", __FILE__, __func__);
+  printf_stderr("[xeon] %s:%d(%s)\n", __FILE__, __LINE__, __func__);
   AssertInOwningThread();
   MOZ_ASSERT(!mMightHaveUnreportedJSException,
              "Why didn't you tell us you planned to handle JS exceptions?");
@@ -373,7 +373,7 @@ bool TErrorResult<CleanupPolicy>::DeserializeDOMExceptionInfo(
 template <typename CleanupPolicy>
 void TErrorResult<CleanupPolicy>::ThrowDOMException(nsresult rv,
                                                     const nsACString& message) {
-  printf_stderr("[xeon] %s:%s\n", __FILE__, __func__);
+  printf_stderr("[xeon] %s:%d(%s)\n", __FILE__, __LINE__, __func__);
   AssertInOwningThread();
   ClearUnionData();
 
@@ -386,7 +386,7 @@ void TErrorResult<CleanupPolicy>::ThrowDOMException(nsresult rv,
 
 template <typename CleanupPolicy>
 void TErrorResult<CleanupPolicy>::SetPendingDOMException(JSContext* cx) {
-  printf_stderr("[xeon] %s:%s\n", __FILE__, __func__);
+  printf_stderr("[xeon] %s:%d(%s)\n", __FILE__, __LINE__, __func__);
   AssertInOwningThread();
   MOZ_ASSERT(mUnionState == HasDOMExceptionInfo);
   MOZ_ASSERT(mExtra.mDOMExceptionInfo,
@@ -432,7 +432,7 @@ void TErrorResult<CleanupPolicy>::ClearUnionData() {
 template <typename CleanupPolicy>
 void TErrorResult<CleanupPolicy>::SetPendingGenericErrorException(
     JSContext* cx) {
-  printf_stderr("[xeon] %s:%s\n", __FILE__, __func__);
+  printf_stderr("[xeon] %s:%d(%s)\n", __FILE__, __LINE__, __func__);
   AssertInOwningThread();
   MOZ_ASSERT(!IsErrorWithMessage());
   MOZ_ASSERT(!IsJSException());
@@ -558,7 +558,7 @@ void TErrorResult<CleanupPolicy>::SuppressException() {
 
 template <typename CleanupPolicy>
 void TErrorResult<CleanupPolicy>::SetPendingException(JSContext* cx) {
-  printf_stderr("[xeon] %s:%s\n", __FILE__, __func__);
+  printf_stderr("[xeon] %s:%d(%s)\n", __FILE__, __LINE__, __func__);
   AssertInOwningThread();
   if (IsUncatchableException()) {
     // Nuke any existing exception on cx, to make sure we're uncatchable.

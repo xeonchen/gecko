@@ -12,10 +12,10 @@ function run_test() {
   try {
     Cu.evalInSandbox("func();", sb);
   } catch (e) {
-    dump("[BUG 267645] stack = " + e.stack + "\n");
-    Assert.ok(!e.stack.includes("/unit/"));
     dump("[BUG 267645] fileName = " + e.fileName + "\n");
     Assert.ok(!e.fileName.includes("/unit/"));
+    dump("[BUG 267645] stack = " + e.stack + "\n");
+    Assert.ok(!e.stack.includes("/unit/"));
     called = true;
   }
   Assert.ok(called);
