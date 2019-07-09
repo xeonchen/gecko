@@ -626,6 +626,10 @@ PR_LocalTimeParameters(const PRExplodedTime *gmt)
         /* Shouldn't happen. Use safe fallback for optimized builds. */
         return PR_GMTParameters(gmt);
     }
+    fprintf(stderr, "pid=%d TZ=%s localTime=%02d:%02d\n", getpid(),
+                                                          PR_GetEnv("TZ"),
+                                                          localTime.tm_hour,
+                                                          localTime.tm_min);
 
     /* GMT is 00:00:00, 2nd of Jan. */
 
