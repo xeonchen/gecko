@@ -419,7 +419,7 @@ class PageAction {
   }
 
   async _renderPopup(message, browser) {
-    const { id, content } = message;
+    const { id, content, template } = message;
 
     const headerLabel = this.window.document.getElementById(
       "cfr-notification-header-label"
@@ -626,7 +626,13 @@ class PageAction {
 
     // A hacky way of setting the popup anchor outside the usual url bar icon box
     // See https://searchfox.org/mozilla-central/rev/847b64cc28b74b44c379f9bff4f415b97da1c6d7/toolkit/modules/PopupNotifications.jsm#42
-    browser.cfrpopupnotificationanchor = this.container;
+    if (message.template === "social_tracking_doorhanger") {
+      browser.cfrpopupnotificationanchor = this.window.document.getElementById(
+        "tracking-protection-icon-box"
+      );
+    } else {
+      browser.cfrpopupnotificationanchor = this.container;
+    }
 
     this._sendTelemetry({
       message_id: id,
@@ -715,8 +721,13 @@ const CFRPageActions = {
   async forceRecommendation(browser, recommendation, dispatchToASRouter) {
     // If we are forcing via the Admin page, the browser comes in a different format
     const win = browser.browser.ownerGlobal;
-    const { id, content } = recommendation;
-    RecommendationMap.set(browser.browser, { id, retain: true, content });
+    const { id, content, template } = recommendation;
+    RecommendationMap.set(browser.browser, {
+      id,
+      retain: true,
+      content,
+      template,
+    });
     if (!PageActionMap.has(win)) {
       PageActionMap.set(win, new PageAction(win, dispatchToASRouter));
     }
@@ -747,8 +758,14 @@ const CFRPageActions = {
       // Don't replace an existing message
       return false;
     }
-    const { id, content } = recommendation;
-    RecommendationMap.set(browser, { id, host, retain: true, content });
+    const { id, content, template } = recommendation;
+    RecommendationMap.set(browser, {
+      id,
+      host,
+      retain: true,
+      content,
+      template,
+    });
     if (!PageActionMap.has(win)) {
       PageActionMap.set(win, new PageAction(win, dispatchToASRouter));
     }

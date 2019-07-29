@@ -526,6 +526,61 @@ const CFR_MESSAGES = [
     frequency: { lifetime: 3 },
     trigger: { id: "frequentVisits", params: PINNED_TABS_TARGET_SITES },
   },
+  {
+    id: "SOCIAL_TRACKING",
+    template: "social_tracking_doorhanger",
+    content: {
+      category: "cfrFeatures",
+      bucket_id: "CFR_PIN_TAB",
+      notification_text: { string_id: "cfr-doorhanger-extension-notification" },
+      heading_text: { string_id: "cfr-doorhanger-pintab-heading" },
+      info_icon: {
+        label: { string_id: "cfr-doorhanger-extension-sumo-link" },
+        sumo_path: REDDIT_ENHANCEMENT_PARAMS.sumo_path,
+      },
+      text: { string_id: "cfr-doorhanger-pintab-description" },
+      descriptionDetails: {
+        steps: [
+          { string_id: "cfr-doorhanger-pintab-step1" },
+          { string_id: "cfr-doorhanger-pintab-step2" },
+          { string_id: "cfr-doorhanger-pintab-step3" },
+        ],
+      },
+      buttons: {
+        primary: {
+          label: { string_id: "cfr-doorhanger-pintab-ok-button" },
+          action: {
+            type: "PIN_CURRENT_TAB",
+          },
+        },
+        secondary: [
+          {
+            label: { string_id: "cfr-doorhanger-extension-cancel-button" },
+            action: { type: "CANCEL" },
+          },
+          {
+            label: {
+              string_id: "cfr-doorhanger-extension-never-show-recommendation",
+            },
+          },
+          {
+            label: {
+              string_id: "cfr-doorhanger-extension-manage-settings-button",
+            },
+            action: {
+              type: "OPEN_PREFERENCES_PAGE",
+              data: { category: "general-cfrfeatures" },
+            },
+          },
+        ],
+      },
+    },
+    targeting: `locale in ${JSON.stringify(
+      PINNED_TABS_TARGET_LOCALES
+    )} && !hasPinnedTabs && recentVisits[.timestamp > (currentDate|date - 3600 * 1000 * 1)]|length >= 3`,
+    frequency: { lifetime: 3 },
+    trigger: { id: "frequentVisits", params: PINNED_TABS_TARGET_SITES },
+  },
 ];
 
 const CFRMessageProvider = {

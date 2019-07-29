@@ -1277,6 +1277,8 @@ class _ASRouter {
    */
   routeMessageToTarget(message, target, trigger, force = false) {
     switch (message.template) {
+      case "social_tracking_doorhanger":
+        // try to call another function here.
       case "cfr_doorhanger":
         if (force) {
           CFRPageActions.forceRecommendation(target, message, this.dispatch);
