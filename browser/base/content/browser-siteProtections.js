@@ -851,7 +851,7 @@ var SocialTracking = {
   PREF_NOTIFICATION_UI_ENABLED: "privacy.socialtracking.notification.enabled",
   PREF_SESSION_PAGELOAD_MIN:
     "privacy.socialtracking.notification.session.pageload.min",
-  PREF_LAST_SEEN: "privacy.socialtracking.notification.lastSeen",
+  PREF_LAST_SHOWN: "privacy.socialtracking.notification.lastShown",
   PREF_PERIOD_MIN: "privacy.socialtracking.notification.period.min",
   PREF_COUNTER: "privacy.socialtracking.notification.counter",
   PREF_MAX: "privacy.socialtracking.notification.max",
@@ -890,8 +890,10 @@ var SocialTracking = {
     );
     XPCOMUtils.defineLazyPreferenceGetter(
       this,
-      "lastSeen",
-      this.PREF_LAST_SEEN
+      "lastShownMillisec",
+      this.PREF_LAST_SHOWN,
+      null,
+      str => parseInt(str)
     );
     XPCOMUtils.defineLazyPreferenceGetter(
       this,
@@ -997,7 +999,7 @@ var SocialTracking = {
   },
 
   onBlocked() {
-    let now = Date.now();
+    let nowMillisec = Date.now();
     // The heuristics to show the pop-up are:
     //   0. a social media tracker is blocked
     //   1. user didn't disable notification UI by:
@@ -1010,14 +1012,14 @@ var SocialTracking = {
     if (
       !this.uiEnabled ||
       this.sessionPageLoad <= this.sessionPageLoadMin ||
-      now - this.lastSeen < this.periodMinMillisec ||
+      nowMillisec - this.lastShownMillisec < this.periodMinMillisec ||
       this.numNotifications >= this.maxNotifications ||
       this.currentPopup
     ) {
       return;
     }
 
-    Services.prefs.setIntPref(this.PREF_LAST_SEEN, now);
+    Services.prefs.setCharPref(this.PREF_LAST_SHOWN, nowMillisec.toString());
     Services.prefs.setIntPref(this.PREF_COUNTER, this.numNotifications + 1);
 
     let browser = gBrowser.selectedBrowser;
