@@ -6,6 +6,16 @@ var { Services } = ChromeUtils.import("resource://gre/modules/Services.jsm");
 var { AppConstants } = ChromeUtils.import(
   "resource://gre/modules/AppConstants.jsm"
 );
+var { XPCOMUtils } = ChromeUtils.import(
+  "resource://gre/modules/XPCOMUtils.jsm"
+);
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  this,
+  "gFirstPartyIsolationEnabled",
+  "privacy.firstparty.isolate",
+  false
+);
 
 const permissionExceptionsL10n = {
   trackingprotection: {
@@ -230,9 +240,12 @@ var gPermissionManager = {
       // permissions from being entered by the user.
       try {
         let uri = Services.io.newURI(input_url);
+        let originAttributes = gFirstPartyIsolationEnabled
+          ? { firstPartyDomain: Services.eTLD.getBaseDomain(uri) }
+          : {};
         let principal = Services.scriptSecurityManager.createContentPrincipal(
           uri,
-          {}
+          originAttributes
         );
         if (principal.origin.startsWith("moz-nullprincipal:")) {
           throw new Error("Null principal");
