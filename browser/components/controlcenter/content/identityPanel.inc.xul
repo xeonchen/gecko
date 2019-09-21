@@ -61,6 +61,20 @@
                 oncommand="gIdentityHandler.showSecuritySubView(); gIdentityHandler.recordClick('security_subview_btn');"/>
       </hbox>
 
+      <hbox class="identity-popup-section" when-dns="encrypted cached">
+        <hbox class="identity-popup-dns-content" flex="1">
+          <description class="identity-popup-dns-encrypted" when-dns="encrypted" flex="1">&identity.dnsEncrypted;</description>
+          <description class="identity-popup-dns-cached" when-dns="cached" flex="1">&identity.dnsCached;</description>
+          <hbox class="identity-popup-dns-server" when-dns="encrypted">
+            <description>&identity.dohVia;</description>
+            <description id="identity-popup-dns-server-name"></description>
+          </hbox>
+        </hbox>
+        <button id="identity-popup-dns-expander"
+                class="identity-popup-expander"
+                oncommand="gIdentityHandler.openNetworkPreferences(); gIdentityHandler.recordClick('network_pref_btn');"/>
+      </hbox>
+
       <!-- Permissions Section -->
       <hbox class="identity-popup-section"
             when-connection="not-secure secure secure-ev secure-cert-user-overridden file extension cert-error-page">

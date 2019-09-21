@@ -669,7 +669,7 @@
 <groupbox id="connectionGroup" data-category="paneGeneral" hidden="true">
   <label class="search-header" hidden="true"><html:h2 data-l10n-id="network-settings-title"/></label>
 
-  <hbox align="center">
+  <hbox align="center" data-subcategory="networking">
     <hbox align="center" flex="1">
       <description id="connectionSettingsDescription" control="connectionSettings"/>
       <spacer width="5"/>

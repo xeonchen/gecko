@@ -4,6 +4,10 @@
 
 /* eslint-env mozilla/browser-window */
 
+XPCOMUtils.defineLazyModuleGetters(this, {
+  Preferences: "resource://gre/modules/Preferences.jsm",
+});
+
 /**
  * Utility object to handle manipulations of the identity indicators in the UI
  */
@@ -138,6 +142,54 @@ var gIdentityHandler = {
       LoginManagerParent.hasInsecureLoginForms(gBrowser.selectedBrowser) &&
       Services.prefs.getBoolPref("security.insecure_password.ui.enabled")
     );
+  },
+
+  get _isDoH() {
+    return gBrowser.selectedBrowser.isDoH;
+  },
+
+  get _isFromCache() {
+    return gBrowser.selectedBrowser.isFromCache;
+  },
+
+  _updateTrrName() {
+    let getProviderName = uri => {
+      let trrResolvers = Preferences.get("network.trr.resolvers");
+      try {
+        return JSON.parse(trrResolvers).find(r => r.url == uri).name;
+      } catch (ex) {
+        return null;
+      }
+    };
+
+    let trrUri = Preferences.get("network.trr.uri");
+    let name = getProviderName(trrUri);
+
+    if (!name) {
+      let trrCustomUri = Preferences.get("network.trr.custom_uri");
+      name =
+        trrUri === trrCustomUri
+          ? gNavigatorBundle.getString("identity.dohCustomServer")
+          : trrUri;
+    }
+
+    this._trrName = name ? name : trrUri;
+  },
+
+  get _resolver() {
+    delete this._resolver;
+
+    Preferences.observe("network.trr.custom_uri", this._updateTrrName, this);
+    Preferences.observe("network.trr.resolvers", this._updateTrrName, this);
+    Preferences.observe("network.trr.uri", this._updateTrrName, this);
+    this._updateTrrName();
+
+    Object.defineProperty(this, "_resolver", {
+      get() {
+        return this._trrName;
+      },
+    });
+    return this._resolver;
   },
 
   // smart getters
@@ -301,6 +353,13 @@ var gIdentityHandler = {
     ));
   },
 
+  get _identityPopupDnsServer() {
+    delete this._identityPopupDnsServer;
+    return (this._identityPopupDnsServer = document.getElementById(
+      "identity-popup-dns-server-name"
+    ));
+  },
+
   get _insecureConnectionIconEnabled() {
     delete this._insecureConnectionIconEnabled;
     XPCOMUtils.defineLazyPreferenceGetter(
@@ -401,6 +460,10 @@ var gIdentityHandler = {
     }
 
     event.stopPropagation();
+  },
+
+  openNetworkPreferences() {
+    openPreferences("general-networking");
   },
 
   openPermissionPreferences() {
@@ -1033,6 +1096,15 @@ var gIdentityHandler = {
       ciphers = "weak";
     }
 
+    let dns = null;
+    if (this._isDoH) {
+      dns = "encrypted";
+    } else if (this._isFromCache) {
+      dns = "cached";
+    }
+
+    this._identityPopupDnsServer.textContent = this._resolver;
+
     // Gray lock icon for secure connections if pref set
     this._updateAttribute(
       this._identityPopup,
@@ -1051,6 +1123,7 @@ var gIdentityHandler = {
       this._updateAttribute(element, "mixedcontent", mixedcontent);
       this._updateAttribute(element, "isbroken", this._isBrokenConnection);
       this._updateAttribute(element, "customroot", customRoot);
+      this._updateAttribute(element, "dns", dns);
     }
 
     // Initialize the optional strings to empty values
