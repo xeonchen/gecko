@@ -301,6 +301,13 @@ var gIdentityHandler = {
     ));
   },
 
+  get _identityPopupDnsServer() {
+    delete this._identityPopupDnsServer;
+    return (this._identityPopupDnsServer = document.getElementById(
+      "identity-popup-dns-server-name"
+    ));
+  },
+
   get _insecureConnectionIconEnabled() {
     delete this._insecureConnectionIconEnabled;
     XPCOMUtils.defineLazyPreferenceGetter(
@@ -370,6 +377,78 @@ var gIdentityHandler = {
     return this._showExtendedValidation;
   },
 
+  get _trrEnabled() {
+    delete this._trrEnabled;
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_trrEnabled",
+      "network.trr.mode",
+      0,
+      null,
+      val => [2, 3].includes(val)
+    );
+    return this._trrEnabled;
+  },
+
+  get _trrResolvers() {
+    delete this._trrResolvers;
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_trrResolvers",
+      "network.trr.resolvers",
+      "",
+      this._updateTrrName.bind(this),
+      raw => {
+        let resolvers;
+        try {
+          resolvers = JSON.parse(raw);
+        } catch (e) {
+          resolvers = [];
+        }
+        return Array.isArray(resolvers) ? resolvers : [];
+      }
+    );
+    return this._trrResolvers;
+  },
+
+  get _trrUri() {
+    delete this._trrUri;
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_trrUri",
+      "network.trr.uri",
+      "",
+      this._updateTrrName.bind(this)
+    );
+    return this._trrUri;
+  },
+
+  get _trrCustomName() {
+    delete this._trrCustomName;
+    return (this._trrCustomName = gNavigatorBundle.getString(
+      "identity.dohCustomServer"
+    ));
+  },
+
+  get _trrCustomUri() {
+    delete this._trrCustomUri;
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_trrCustomUri",
+      "network.trr.custom_uri",
+      "",
+      this._updateTrrName.bind(this)
+    );
+    return this._trrCustomUri;
+  },
+
+  get _trrName() {
+    if (this.__trrName) {
+      return this.__trrName;
+    }
+    return this._updateTrrName();
+  },
+
   /**
    * Handles clicks on the "Clear Cookies and Site Data" button.
    */
@@ -401,6 +480,10 @@ var gIdentityHandler = {
     }
 
     event.stopPropagation();
+  },
+
+  openNetworkPreferences() {
+    openPreferences("general-networking");
   },
 
   openPermissionPreferences() {
@@ -554,6 +637,22 @@ var gIdentityHandler = {
       );
       Services.console.logMessage(consoleMsg);
     }
+  },
+
+  _updateTrrName() {
+    let customResolver = {
+      name: this._trrCustomName,
+      url: this._trrCustomUri,
+    };
+    let unknownResolver = {
+      name: this._trrUri,
+      url: this._trrUri,
+    };
+    let resolvers = this._trrResolvers.concat([
+      customResolver,
+      unknownResolver,
+    ]);
+    return (this.__trrName = resolvers.find(r => r.url === this._trrUri).name);
   },
 
   /**
@@ -1025,6 +1124,13 @@ var gIdentityHandler = {
       ciphers = "weak";
     }
 
+    let dns;
+    if (this._trrEnabled) {
+      dns = "encrypted";
+    }
+
+    this._identityPopupDnsServer.textContent = this._trrName;
+
     // Gray lock icon for secure connections if pref set
     this._updateAttribute(
       this._identityPopup,
@@ -1043,6 +1149,7 @@ var gIdentityHandler = {
       this._updateAttribute(element, "mixedcontent", mixedcontent);
       this._updateAttribute(element, "isbroken", this._isBrokenConnection);
       this._updateAttribute(element, "customroot", customRoot);
+      this._updateAttribute(element, "dns", dns);
     }
 
     // Initialize the optional strings to empty values

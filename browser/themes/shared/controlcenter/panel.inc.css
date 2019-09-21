@@ -5,7 +5,7 @@
 %endif
 
 /* Hide all conditional elements by default. */
-:-moz-any([when-connection],[when-customroot],[when-mixedcontent],[when-ciphers],[when-loginforms]) {
+:-moz-any([when-connection],[when-dns],[when-customroot],[when-mixedcontent],[when-ciphers],[when-loginforms]) {
   display: none;
 }
 
@@ -48,6 +48,7 @@
 #identity-popup[connection=file] [when-connection~=file],
 #identity-popup[connection=extension] [when-connection~=extension],
 #identity-popup[connection=cert-error-page] [when-connection~=cert-error-page],
+#identity-popup[dns=encrypted] [when-dns~=encrypted],
 /* Show insecure login forms messages when needed. */
 #identity-popup[loginforms=insecure] [when-loginforms=insecure],
 /* Show weak cipher messages when needed. */
@@ -110,7 +111,8 @@
   border-bottom: 1px solid var(--panel-separator-color);
 }
 
-.identity-popup-security-connection {
+.identity-popup-security-connection,
+.identity-popup-dns-content {
   background-repeat: no-repeat;
   background-position: 2em 50%;
   background-size: 16px auto;
@@ -127,6 +129,7 @@
 }
 
 #identity-popup-permissions-header,
+.identity-popup-dns-content,
 .identity-popup-security-connection,
 #identity-popup-security-description {
   /* icon indent + 16px icon width + 6px description margin
@@ -145,9 +148,19 @@
 }
 
 .identity-popup-security-content,
+.identity-popup-dns-content,
 #identity-popup-permissions-content {
   padding-top: 1em;
   padding-bottom: 1em;
+}
+
+.identity-popup-dns-content {
+  background-image: url(chrome://branding/content/icon48.png);
+}
+
+.identity-popup-dns-server > description {
+  opacity: 0.6;
+  margin-inline-start: unset;
 }
 
 #identity-popup-permissions-header {

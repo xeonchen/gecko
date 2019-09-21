@@ -61,6 +61,19 @@
                 oncommand="gIdentityHandler.showSecuritySubView();"/>
       </hbox>
 
+      <hbox class="identity-popup-section" when-dns="encrypted">
+        <hbox class="identity-popup-dns-content" flex="1">
+          <description class="identity-popup-dns-encrypted" flex="1">&identity.dnsEncrypted;</description>
+          <hbox class="identity-popup-dns-server">
+            <description>&identity.dohVia;</description>
+            <description id="identity-popup-dns-server-name"></description>
+          </hbox>
+        </hbox>
+        <button id="identity-popup-dns-expander"
+                class="identity-popup-expander"
+                oncommand="gIdentityHandler.openNetworkPreferences(); gIdentityHandler.recordClick('network_pref_btn');"/>
+      </hbox>
+
       <!-- Permissions Section -->
       <hbox class="identity-popup-section"
             when-connection="not-secure secure secure-ev secure-cert-user-overridden file extension cert-error-page">
