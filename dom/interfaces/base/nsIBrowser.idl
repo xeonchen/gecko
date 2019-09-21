@@ -164,7 +164,9 @@ interface nsIBrowser : nsISupports
                                in uint64_t aInnerWindowID,
                                in boolean aHasRequestContextID,
                                in uint64_t aRequestContextID,
-                               in AString aContentType);
+                               in AString aContentType,
+                               in boolean aIsResolvedByTRR,
+                               in boolean aIsFromCache);
 
   /**
    * Called by Gecko when a security chang event needs to update the event

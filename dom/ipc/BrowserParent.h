@@ -304,7 +304,8 @@ class BrowserParent final : public PBrowserParent,
       const Maybe<WebProgressData>& aWebProgressData,
       const RequestData& aRequestData, nsIURI* aLocation, const uint32_t aFlags,
       const bool aCanGoBack, const bool aCanGoForward,
-      const Maybe<WebProgressLocationChangeData>& aLocationChangeData);
+      const Maybe<WebProgressLocationChangeData>& aLocationChangeData,
+      const bool aIsResolvedByTRR, const bool aIsFromCache);
 
   mozilla::ipc::IPCResult RecvOnStatusChange(
       const Maybe<WebProgressData>& aWebProgressData,

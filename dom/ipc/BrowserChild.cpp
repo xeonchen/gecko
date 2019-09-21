@@ -142,6 +142,8 @@
 #include "mozilla/dom/WindowGlobalChild.h"
 #include "MMPrinter.h"
 #include "mozilla/ResultExtensions.h"
+#include "nsIHttpChannelInternal.h"
+#include "nsICacheInfoChannel.h"
 
 #ifdef XP_WIN
 #  include "mozilla/plugins/PluginWidgetChild.h"
@@ -3657,9 +3659,22 @@ NS_IMETHODIMP BrowserChild::OnLocationChange(nsIWebProgress* aWebProgress,
 #endif
   }
 
-  Unused << SendOnLocationChange(webProgressData, requestData, aLocation,
-                                 aFlags, canGoBack, canGoForward,
-                                 locationChangeData);
+  bool isResolvedByTRR = false;
+  nsCOMPtr<nsIHttpChannelInternal> internalChannel =
+      do_QueryInterface(aRequest);
+  if (internalChannel) {
+    Unused << internalChannel->GetIsResolvedByTRR(&isResolvedByTRR);
+  }
+
+  bool isFromCache = false;
+  nsCOMPtr<nsICacheInfoChannel> cacheInfoChannel = do_QueryInterface(aRequest);
+  if (cacheInfoChannel) {
+    Unused << cacheInfoChannel->IsFromCache(&isFromCache);
+  }
+
+  Unused << SendOnLocationChange(
+      webProgressData, requestData, aLocation, aFlags, canGoBack, canGoForward,
+      locationChangeData, isResolvedByTRR, isFromCache);
 
   return NS_OK;
 }

@@ -602,7 +602,9 @@ parent:
                            RequestData aRequestData, nsIURI aLocation,
                            uint32_t aFlags, bool aCanGoBack,
                            bool aCanGoForward,
-                           WebProgressLocationChangeData? aLocationChangeData);
+                           WebProgressLocationChangeData? aLocationChangeData,
+                           bool aIsResolvedByTRR,
+                           bool aIsFromCache);
 
     async OnStatusChange(WebProgressData? aWebProgressData,
                          RequestData aRequestData, nsresult aStatus,

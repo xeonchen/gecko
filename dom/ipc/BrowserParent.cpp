@@ -2503,7 +2503,8 @@ mozilla::ipc::IPCResult BrowserParent::RecvOnLocationChange(
     const Maybe<WebProgressData>& aWebProgressData,
     const RequestData& aRequestData, nsIURI* aLocation, const uint32_t aFlags,
     const bool aCanGoBack, const bool aCanGoForward,
-    const Maybe<WebProgressLocationChangeData>& aLocationChangeData) {
+    const Maybe<WebProgressLocationChangeData>& aLocationChangeData,
+    const bool aIsResolvedByTRR, const bool aIsFromCache) {
   nsCOMPtr<nsIBrowser> browser;
   nsCOMPtr<nsIWebProgress> manager;
   nsCOMPtr<nsIWebProgressListener> managerAsListener;
@@ -2537,7 +2538,7 @@ mozilla::ipc::IPCResult BrowserParent::RecvOnLocationChange(
         aWebProgressData->innerDOMWindowID(),
         aLocationChangeData->requestContextID().isSome(),
         aLocationChangeData->requestContextID().valueOr(0),
-        aLocationChangeData->contentType());
+        aLocationChangeData->contentType(), aIsResolvedByTRR, aIsFromCache);
   }
 
   Unused << managerAsListener->OnLocationChange(webProgress, request, aLocation,

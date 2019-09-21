@@ -313,6 +313,10 @@
 
       this._contentRequestContextID = null;
 
+      this._isDoH = false;
+
+      this._isFromCache = false;
+
       this._fullZoom = 1;
 
       this._textZoom = 1;
@@ -908,6 +912,14 @@
       }
 
       return this.docShell.securityUI;
+    }
+
+    get isDoH() {
+      return this._isDoH;
+    }
+
+    get isFromCache() {
+      return this._isFromCache;
     }
 
     set userTypedValue(val) {
@@ -1571,7 +1583,9 @@
       aInnerWindowID,
       aHaveRequestContextID,
       aRequestContextID,
-      aContentType
+      aContentType,
+      aIsResolvedByTRR,
+      aIsFromCache
     ) {
       if (this.isRemoteBrowser && this.messageManager) {
         if (aCharset != null) {
@@ -1598,6 +1612,8 @@
         this._contentRequestContextID = aHaveRequestContextID
           ? aRequestContextID
           : null;
+        this._isDoH = aIsResolvedByTRR;
+        this._isFromCache = aIsFromCache;
       }
     }
 
