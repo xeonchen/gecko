@@ -640,6 +640,9 @@ you can use these alternative items. Otherwise, their values should be empty.  -
 
 <!ENTITY identity.dnsEncrypted "DNS Encrypted">
 <!ENTITY identity.dnsCached "DNS Cached">
+
+<!-- LOCALIZATION NOTE (identity.dohVia): DNS-over-HTTPS via <provider>.
+     This is followed by the name of the DNS provider -->
 <!ENTITY identity.dohVia "Via">
 
 <!ENTITY identity.evOwnerLabel2 "Certificate issued to:">

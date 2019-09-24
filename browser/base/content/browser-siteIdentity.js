@@ -4,10 +4,6 @@
 
 /* eslint-env mozilla/browser-window */
 
-XPCOMUtils.defineLazyModuleGetters(this, {
-  Preferences: "resource://gre/modules/Preferences.jsm",
-});
-
 /**
  * Utility object to handle manipulations of the identity indicators in the UI
  */
@@ -150,46 +146,6 @@ var gIdentityHandler = {
 
   get _isFromCache() {
     return gBrowser.selectedBrowser.isFromCache;
-  },
-
-  _updateTrrName() {
-    let getProviderName = uri => {
-      let trrResolvers = Preferences.get("network.trr.resolvers");
-      try {
-        return JSON.parse(trrResolvers).find(r => r.url == uri).name;
-      } catch (ex) {
-        return null;
-      }
-    };
-
-    let trrUri = Preferences.get("network.trr.uri");
-    let name = getProviderName(trrUri);
-
-    if (!name) {
-      let trrCustomUri = Preferences.get("network.trr.custom_uri");
-      name =
-        trrUri === trrCustomUri
-          ? gNavigatorBundle.getString("identity.dohCustomServer")
-          : trrUri;
-    }
-
-    this._trrName = name ? name : trrUri;
-  },
-
-  get _resolver() {
-    delete this._resolver;
-
-    Preferences.observe("network.trr.custom_uri", this._updateTrrName, this);
-    Preferences.observe("network.trr.resolvers", this._updateTrrName, this);
-    Preferences.observe("network.trr.uri", this._updateTrrName, this);
-    this._updateTrrName();
-
-    Object.defineProperty(this, "_resolver", {
-      get() {
-        return this._trrName;
-      },
-    });
-    return this._resolver;
   },
 
   // smart getters
@@ -429,6 +385,65 @@ var gIdentityHandler = {
     return this._showExtendedValidation;
   },
 
+  get _trrResolvers() {
+    delete this._trrResolvers;
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_trrResolvers",
+      "network.trr.resolvers",
+      "",
+      this._updateTrrName.bind(this),
+      raw => {
+        let resolvers;
+        try {
+          resolvers = JSON.parse(raw);
+        } catch (e) {
+          resolvers = [];
+        }
+        return Array.isArray(resolvers) ? resolvers : [];
+      }
+    );
+    return this._trrResolvers;
+  },
+
+  get _trrUri() {
+    delete this._trrUri;
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_trrUri",
+      "network.trr.uri",
+      "",
+      this._updateTrrName.bind(this)
+    );
+    return this._trrUri;
+  },
+
+  get _trrCustomName() {
+    delete this._trrCustomName;
+    return (this._trrCustomName = gNavigatorBundle.getString(
+      "identity.dohCustomServer"
+    ));
+  },
+
+  get _trrCustomUri() {
+    delete this._trrCustomUri;
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "_trrCustomUri",
+      "network.trr.custom_uri",
+      "",
+      this._updateTrrName.bind(this)
+    );
+    return this._trrCustomUri;
+  },
+
+  get _trrName() {
+    if (this.__trrName) {
+      return this.__trrName;
+    }
+    return this._updateTrrName();
+  },
+
   /**
    * Handles clicks on the "Clear Cookies and Site Data" button.
    */
@@ -625,6 +640,22 @@ var gIdentityHandler = {
       );
       Services.console.logMessage(consoleMsg);
     }
+  },
+
+  _updateTrrName() {
+    let customResolver = {
+      name: this._trrCustomName,
+      url: this._trrCustomUri,
+    };
+    let unknownResolver = {
+      name: this._trrUri,
+      url: this._trrUri,
+    };
+    let resolvers = this._trrResolvers.concat([
+      customResolver,
+      unknownResolver,
+    ]);
+    return (this.__trrName = resolvers.find(r => r.url === this._trrUri).name);
   },
 
   /**
@@ -1096,14 +1127,14 @@ var gIdentityHandler = {
       ciphers = "weak";
     }
 
-    let dns = null;
+    let dns;
     if (this._isDoH) {
       dns = "encrypted";
     } else if (this._isFromCache) {
       dns = "cached";
     }
 
-    this._identityPopupDnsServer.textContent = this._resolver;
+    this._identityPopupDnsServer.textContent = this._trrName;
 
     // Gray lock icon for secure connections if pref set
     this._updateAttribute(
