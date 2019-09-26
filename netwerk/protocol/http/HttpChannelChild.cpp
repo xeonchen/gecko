@@ -24,6 +24,7 @@
 #include "mozilla/net/HttpChannelChild.h"
 #include "mozilla/net/UrlClassifierCommon.h"
 #include "mozilla/net/UrlClassifierFeatureFactory.h"
+#include "mozilla/StaticPrefs_network.h"
 
 #include "AltDataOutputStreamChild.h"
 #include "CookieServiceChild.h"
@@ -76,6 +77,8 @@
 
 using namespace mozilla::dom;
 using namespace mozilla::ipc;
+
+static const uint32_t kMaxConsoleOutputDelayMs = 100;
 
 namespace mozilla {
 namespace net {
@@ -659,11 +662,47 @@ class SyntheticDiversionListener final : public nsIStreamListener {
 
 NS_IMPL_ISUPPORTS(SyntheticDiversionListener, nsIStreamListener);
 
+void HttpChannelChild::ReportTrrStateToConsole() {
+  MOZ_ASSERT(mLoadInfo);
+  MOZ_ASSERT(mURI);
+
+  // only report on fallback mode.
+  if (StaticPrefs::network_trr_mode() != 2) {
+    return;
+  }
+
+  RefPtr<Document> doc;
+  nsresult rv = mLoadInfo->GetLoadingDocument(getter_AddRefs(doc));
+  NS_ENSURE_SUCCESS_VOID(rv);
+
+  if (!doc || mResolvedByTRR || mIsFromCache) {
+    return;
+  }
+
+  nsCOMPtr<nsIURI> uri = mURI;
+
+  RefPtr<Runnable> runnable =
+      NS_NewRunnableFunction("ReportTrrStateToConsoleDelayed", [doc, uri]() {
+        nsAutoCString asciiHost;
+        uri->GetAsciiHost(asciiHost);
+        AutoTArray<nsString, 1> params = {NS_ConvertUTF8toUTF16(asciiHost)};
+
+        Unused << nsContentUtils::ReportToConsole(
+            nsIScriptError::warningFlag, NS_LITERAL_CSTRING("TRR"), doc,
+            nsContentUtils::eNECKO_PROPERTIES, "TrrUnused", params, uri);
+      });
+
+  NS_DispatchToCurrentThreadQueue(runnable.forget(), kMaxConsoleOutputDelayMs,
+                                  EventQueuePriority::Idle);
+}
+
 void HttpChannelChild::DoOnStartRequest(nsIRequest* aRequest,
                                         nsISupports* aContext) {
   nsresult rv;
 
   LOG(("HttpChannelChild::DoOnStartRequest [this=%p]\n", this));
+
+  ReportTrrStateToConsole();
 
   // In theory mListener should not be null, but in practice sometimes it is.
   MOZ_ASSERT(mListener);

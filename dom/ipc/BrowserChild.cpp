@@ -63,6 +63,7 @@
 #include "mozilla/StaticPtr.h"
 #include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/StaticPrefs_layout.h"
+#include "mozilla/StaticPrefs_network.h"
 #include "mozilla/TextEvents.h"
 #include "mozilla/TouchEvents.h"
 #include "mozilla/Unused.h"
@@ -602,7 +603,8 @@ nsresult BrowserChild::Init(mozIDOMWindowProxy* aParent,
     mPuppetWidget->CreateCompositor();
   }
 
-#if !defined(MOZ_WIDGET_ANDROID) && !defined(MOZ_THUNDERBIRD) && !defined(MOZ_SUITE)
+#if !defined(MOZ_WIDGET_ANDROID) && !defined(MOZ_THUNDERBIRD) && \
+    !defined(MOZ_SUITE)
   mSessionStoreListener = new TabListener(docShell, nullptr);
   rv = mSessionStoreListener->Init();
   NS_ENSURE_SUCCESS(rv, rv);
@@ -3572,6 +3574,52 @@ NS_IMETHODIMP BrowserChild::OnProgressChange(nsIWebProgress* aWebProgress,
   return NS_OK;
 }
 
+static void ReportTrrStateToConsole(Document* aDocument, nsIRequest* aRequest) {
+  // only report on fallback mode.
+  if (StaticPrefs::network_trr_mode() != 2) {
+    return;
+  }
+
+  nsCOMPtr<nsIChannel> channel = do_QueryInterface(aRequest);
+  NS_ENSURE_TRUE_VOID(channel);
+
+  bool isResolvedByTRR = false;
+  nsCOMPtr<nsIHttpChannelInternal> internalChannel =
+      do_QueryInterface(aRequest);
+  NS_ENSURE_TRUE_VOID(internalChannel);
+  Unused << internalChannel->GetIsResolvedByTRR(&isResolvedByTRR);
+
+  bool isFromCache = false;
+  nsCOMPtr<nsICacheInfoChannel> cacheInfoChannel = do_QueryInterface(aRequest);
+  NS_ENSURE_TRUE_VOID(cacheInfoChannel);
+  Unused << cacheInfoChannel->IsFromCache(&isFromCache);
+
+  if (isResolvedByTRR || isFromCache) {
+    return;
+  }
+
+  nsresult rv;
+
+  nsCOMPtr<nsIURI> uri;
+  rv = channel->GetURI(getter_AddRefs(uri));
+  NS_ENSURE_SUCCESS_VOID(rv);
+
+  RefPtr<Document> doc = aDocument;
+
+  RefPtr<Runnable> runnable =
+      NS_NewRunnableFunction("ReportTrrStateToConsoleDelayed", [doc, uri]() {
+        nsAutoCString asciiHost;
+        uri->GetAsciiHost(asciiHost);
+        AutoTArray<nsString, 1> params = {NS_ConvertUTF8toUTF16(asciiHost)};
+
+        Unused << nsContentUtils::ReportToConsole(
+            nsIScriptError::warningFlag, NS_LITERAL_CSTRING("TRR"), doc,
+            nsContentUtils::eNECKO_PROPERTIES, "TrrUnused", params, uri);
+      });
+
+  NS_DispatchToCurrentThreadQueue(runnable.forget(), EventQueuePriority::Idle);
+}
+
 NS_IMETHODIMP BrowserChild::OnLocationChange(nsIWebProgress* aWebProgress,
                                              nsIRequest* aRequest,
                                              nsIURI* aLocation,
@@ -3676,6 +3724,8 @@ NS_IMETHODIMP BrowserChild::OnLocationChange(nsIWebProgress* aWebProgress,
       webProgressData, requestData, aLocation, aFlags, canGoBack, canGoForward,
       locationChangeData, isResolvedByTRR, isFromCache);
 
+  nsCOMPtr<Document> doc = GetTopLevelDocument();
+  ReportTrrStateToConsole(doc, aRequest);
   return NS_OK;
 }
 
