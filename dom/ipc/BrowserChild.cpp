@@ -63,6 +63,7 @@
 #include "mozilla/StaticPtr.h"
 #include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/StaticPrefs_layout.h"
+#include "mozilla/StaticPrefs_network.h"
 #include "mozilla/TextEvents.h"
 #include "mozilla/TouchEvents.h"
 #include "mozilla/Unused.h"
@@ -3586,6 +3587,53 @@ NS_IMETHODIMP BrowserChild::OnProgressChange(nsIWebProgress* aWebProgress,
   return NS_OK;
 }
 
+static void ReportTrrStateToConsole(already_AddRefed<Document>&& aDocument,
+                                    nsIRequest* aRequest) {
+  RefPtr<Document> doc = aDocument;
+
+  // only report on fallback mode.
+  if (StaticPrefs::network_trr_mode() != 2 || !doc || !aRequest) {
+    return;
+  }
+
+  bool isResolvedByTRR = false;
+  nsCOMPtr<nsIHttpChannelInternal> internalChannel =
+      do_QueryInterface(aRequest);
+  if (!internalChannel ||
+      NS_WARN_IF(
+          NS_FAILED(internalChannel->GetIsResolvedByTRR(&isResolvedByTRR))) ||
+      isResolvedByTRR) {
+    return;
+  }
+
+  bool isFromCache = false;
+  nsCOMPtr<nsICacheInfoChannel> cacheInfoChannel = do_QueryInterface(aRequest);
+  if (!cacheInfoChannel ||
+      NS_WARN_IF(NS_FAILED(cacheInfoChannel->IsFromCache(&isFromCache))) ||
+      isFromCache) {
+    return;
+  }
+
+  nsCOMPtr<nsIChannel> channel = do_QueryInterface(aRequest);
+  nsCOMPtr<nsIURI> uri;
+  if (!channel || NS_WARN_IF(NS_FAILED(channel->GetURI(getter_AddRefs(uri))))) {
+    return;
+  }
+
+  RefPtr<Runnable> runnable =
+      NS_NewRunnableFunction("ReportTrrStateToConsoleDelayed", [doc, uri]() {
+        nsAutoCString asciiHost;
+        uri->GetAsciiHost(asciiHost);
+        AutoTArray<nsString, 1> params = {NS_ConvertUTF8toUTF16(asciiHost)};
+
+        Unused << nsContentUtils::ReportToConsole(
+            nsIScriptError::warningFlag, NS_LITERAL_CSTRING("TRR"), doc,
+            nsContentUtils::eNECKO_PROPERTIES, "TrrUnused", params, uri);
+      });
+
+  NS_DispatchToCurrentThreadQueue(runnable.forget(), EventQueuePriority::Idle);
+}
+
 NS_IMETHODIMP BrowserChild::OnLocationChange(nsIWebProgress* aWebProgress,
                                              nsIRequest* aRequest,
                                              nsIURI* aLocation,
@@ -3677,6 +3725,7 @@ NS_IMETHODIMP BrowserChild::OnLocationChange(nsIWebProgress* aWebProgress,
                                  aFlags, canGoBack, canGoForward,
                                  locationChangeData);
 
+  ReportTrrStateToConsole(GetTopLevelDocument(), aRequest);
   return NS_OK;
 }
 

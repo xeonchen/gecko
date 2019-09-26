@@ -282,6 +282,8 @@ class HttpChannelChild final : public PHttpChannelChild,
   bool NeedToReportBytesRead();
   int32_t mUnreportBytesRead = 0;
 
+  void ReportTrrStateToConsole();
+
   void DoOnStartRequest(nsIRequest* aRequest, nsISupports* aContext);
   void DoOnStatus(nsIRequest* aRequest, nsresult status);
   void DoOnProgress(nsIRequest* aRequest, int64_t progress,
