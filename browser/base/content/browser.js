@@ -5620,6 +5620,8 @@ var XULBrowserWindow = {
 
     let browser = gBrowser.selectedBrowser;
 
+    gProtectionsHandler.onStateChange(aStateFlags);
+
     if (
       aStateFlags & nsIWebProgressListener.STATE_START &&
       aStateFlags & nsIWebProgressListener.STATE_IS_NETWORK
