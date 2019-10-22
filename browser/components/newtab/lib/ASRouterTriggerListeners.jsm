@@ -522,7 +522,7 @@ this.ASRouterTriggerListeners = new Map([
                 id: "trackingProtection",
                 param: {
                   host,
-                  type: ev,
+                  type: event,
                 },
                 context: {
                   pageLoad: this._sessionPageLoad,
@@ -541,7 +541,7 @@ this.ASRouterTriggerListeners = new Map([
                     pageLoad: this._sessionPageLoad,
                   },
                   param: {
-                    type: aSubject.wrappedJSObject.event,
+                    host: aSubject.wrappedJSObject.event,
                   },
                 }
               );
