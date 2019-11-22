@@ -354,17 +354,32 @@ ThirdPartyUtil::GetTopWindowForChannel(nsIChannel* aChannel,
                                        nsIURI* aURIBeingLoaded,
                                        mozIDOMWindowProxy** aWin) {
   NS_ENSURE_ARG(aWin);
+  {
+    nsCOMPtr<nsIIdentChannel> identChannel = do_QueryInterface(aChannel);
+    if (identChannel) {
+      nsCOMPtr<nsIURI> uri;
+      identChannel->GetURI(getter_AddRefs(uri));
+      printf_stderr(
+          "[xeon] GetTopWindowForChannel(%" PRIu64
+          ") spec=(%s) beingLoaded=(%s) (pid=%d)\n",
+          identChannel->ChannelId(), uri->GetSpecOrDefault().get(),
+          aURIBeingLoaded ? aURIBeingLoaded->GetSpecOrDefault().get() : "",
+          getpid());
+    }
+  }
 
   // Find the associated window and its parent window.
   nsCOMPtr<nsILoadContext> ctx;
   NS_QueryNotificationCallbacks(aChannel, ctx);
   if (!ctx) {
+    printf_stderr("[xeon] GetTopWindowForChannel !ctx\n");
     return NS_ERROR_INVALID_ARG;
   }
 
   nsCOMPtr<mozIDOMWindowProxy> window;
   ctx->GetAssociatedWindow(getter_AddRefs(window));
   if (!window) {
+    printf_stderr("[xeon] GetTopWindowForChannel !window\n");
     return NS_ERROR_INVALID_ARG;
   }
 

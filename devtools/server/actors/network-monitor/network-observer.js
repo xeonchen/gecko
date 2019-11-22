@@ -424,7 +424,7 @@ NetworkObserver.prototype = {
       const httpActivity = this._createNetworkEvent(channel, {
         fromCache: !fromServiceWorker,
         fromServiceWorker: fromServiceWorker,
-      });
+      }, "http-on-examine-cached-response");
       httpActivity.owner.addResponseStart(
         {
           httpVersion: response.httpVersion,
@@ -450,7 +450,7 @@ NetworkObserver.prototype = {
         serverTimings
       );
     } else if (topic === "http-on-failed-opening-request") {
-      this._createNetworkEvent(channel, { blockedReason });
+      this._createNetworkEvent(channel, { blockedReason }, "http-on-failed-opening-request");
     }
   },
 
@@ -621,7 +621,8 @@ NetworkObserver.prototype = {
    */
   _createNetworkEvent: function(
     channel,
-    { timestamp, extraStringData, fromCache, fromServiceWorker, blockedReason }
+    { timestamp, extraStringData, fromCache, fromServiceWorker, blockedReason },
+    debugInfo
   ) {
     const httpActivity = this.createOrGetActivityObject(channel);
 
@@ -653,6 +654,10 @@ NetworkObserver.prototype = {
       ? referrerInfo.getReferrerPolicyString()
       : "";
     httpActivity.fromServiceWorker = fromServiceWorker;
+
+    if (event.url.includes("adnxs")) {
+      dump(`[xeon] _createNetworkEvent(flag=${channel.thirdPartyClassificationFlags}) channelId=${event.channelId} spec=${event.url} (${debugInfo})\n`);
+    }
 
     if (extraStringData) {
       event.headersSize = extraStringData.length;
@@ -751,7 +756,7 @@ NetworkObserver.prototype = {
       return;
     }
 
-    this._createNetworkEvent(channel, { timestamp, extraStringData });
+    this._createNetworkEvent(channel, { timestamp, extraStringData }, "_onRequestHeader");
   },
 
   /**

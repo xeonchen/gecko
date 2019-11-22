@@ -3096,11 +3096,17 @@ bool NS_IsOffline() {
  *    flag to enforce bypassing the URL classifier check.
  */
 bool NS_ShouldClassifyChannel(nsIChannel* aChannel) {
+  nsCOMPtr<nsIIdentChannel> identChannel = do_QueryInterface(aChannel);
   nsLoadFlags loadFlags;
   Unused << aChannel->GetLoadFlags(&loadFlags);
   //  If our load flags dictate that we must let this channel through without
   //  URL classification, obey that here without performing more checks.
   if (loadFlags & nsIChannel::LOAD_BYPASS_URL_CLASSIFIER) {
+    if (identChannel) {
+      printf_stderr("[xeon] NS_ShouldClassifyChannel(%" PRIu64
+                    ") LOAD_BYPASS_URL_CLASSIFIER\n",
+                    identChannel->ChannelId());
+    }
     return false;
   }
 
@@ -3114,6 +3120,11 @@ bool NS_ShouldClassifyChannel(nsIChannel* aChannel) {
     // channels are critical to bypass classification. for channels don't
     // support beConservative, continue to apply the exemption rules.
     if (NS_SUCCEEDED(rv) && beConservative) {
+      if (identChannel) {
+        printf_stderr("[xeon] NS_ShouldClassifyChannel(%" PRIu64
+                      ") beConservative\n",
+                      identChannel->ChannelId());
+      }
       return false;
     }
   }
@@ -3124,9 +3135,18 @@ bool NS_ShouldClassifyChannel(nsIChannel* aChannel) {
   // load.
   if (nsContentUtils::IsSystemPrincipal(loadInfo->TriggeringPrincipal()) &&
       nsIContentPolicy::TYPE_DOCUMENT != type) {
+    if (identChannel) {
+      printf_stderr("[xeon] NS_ShouldClassifyChannel(%" PRIu64
+                    ") !TYPE_DOCUMENT\n",
+                    identChannel->ChannelId());
+    }
     return false;
   }
 
+  if (identChannel) {
+    printf_stderr("[xeon] NS_ShouldClassifyChannel(%" PRIu64 ") true\n",
+                  identChannel->ChannelId());
+  }
   return true;
 }
 

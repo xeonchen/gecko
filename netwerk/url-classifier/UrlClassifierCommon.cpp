@@ -97,29 +97,56 @@ void UrlClassifierCommon::NotifyChannelBlocked(nsIChannel* aChannel,
 
 /* static */
 bool UrlClassifierCommon::ShouldEnableClassifier(nsIChannel* aChannel) {
+  nsCOMPtr<nsIIdentChannel> identChannel = do_QueryInterface(aChannel);
   MOZ_ASSERT(aChannel);
 
   nsCOMPtr<nsIURI> chanURI;
   nsresult rv = aChannel->GetURI(getter_AddRefs(chanURI));
   if (NS_WARN_IF(NS_FAILED(rv))) {
+    if (identChannel) {
+      printf_stderr(
+          "[xeon] UrlClassifierCommon::ShouldEnableClassifier(ID=%" PRIu64
+          ") false 1\n",
+          identChannel->ChannelId());
+    }
     return false;
   }
 
   if (UrlClassifierCommon::AddonMayLoad(aChannel, chanURI)) {
+    if (identChannel) {
+      printf_stderr(
+          "[xeon] UrlClassifierCommon::ShouldEnableClassifier(ID=%" PRIu64
+          ") false 2\n",
+          identChannel->ChannelId());
+    }
     return false;
   }
 
   nsCOMPtr<nsIURI> topWinURI;
   nsCOMPtr<nsIHttpChannelInternal> channel = do_QueryInterface(aChannel);
   if (!channel) {
+    if (identChannel) {
+      printf_stderr(
+          "[xeon] UrlClassifierCommon::ShouldEnableClassifier(ID=%" PRIu64
+          ") false 3\n",
+          identChannel->ChannelId());
+    }
+
     UC_LOG(("nsChannelClassifier: Not an HTTP channel"));
     return false;
   }
 
   rv = channel->GetTopWindowURI(getter_AddRefs(topWinURI));
   if (NS_FAILED(rv)) {
+    if (identChannel) {
+      printf_stderr(
+          "[xeon] UrlClassifierCommon::ShouldEnableClassifier(ID=%" PRIu64
+          ") false 4 (pid=%d)\n",
+          identChannel->ChannelId(), getpid());
+      rv = channel->GetTopWindowURI(getter_AddRefs(topWinURI));
+    }
     // Skipping top-level load.
-    return false;
+    return true;
   }
 
   // Tracking protection will be enabled so return without updating
@@ -392,6 +419,43 @@ void SetClassificationFlagsHelper(nsIChannel* aChannel,
   if (dummyChannel) {
     dummyChannel->AddClassificationFlags(aClassificationFlags);
   }
+
+  do {
+    if (aIsThirdParty) {
+      nsCOMPtr<nsIURI> uri;
+      MOZ_ALWAYS_SUCCEEDS(aChannel->GetURI(getter_AddRefs(uri)));
+
+      nsAutoCString str(uri->GetSpecOrDefault());
+      nsACString::const_iterator start, end;
+      str.BeginReading(start);
+      str.EndReading(end);
+
+      NS_NAMED_LITERAL_CSTRING(valuePrefix, "adnxs");
+
+      if (!FindInReadable(valuePrefix, start, end)) {
+        break;
+      }
+
+      nsCOMPtr<nsIIdentChannel> identChannel = do_QueryInterface(aChannel);
+      MOZ_ASSERT(identChannel);
+
+      printf_stderr(
+          "[xeon] SetClassificationFlagsHelper(flag=%u) channelId=%" PRIu64
+          " spec=%s [%p](%u, %u)\n",
+          aClassificationFlags, identChannel->ChannelId(),
+          uri->GetSpecOrDefault().get(), httpChannel.get(), getpid(),
+          getppid());
+
+      nsCOMPtr<nsIURI> originalURI;
+      MOZ_ALWAYS_SUCCEEDS(
+          aChannel->GetOriginalURI(getter_AddRefs(originalURI)));
+      bool isEqual = false;
+      if (NS_SUCCEEDED(originalURI->Equals(uri, &isEqual)) && !isEqual) {
+        printf_stderr("[xeon] => redirected from spec=%s\n",
+                      originalURI->GetSpecOrDefault().get());
+      }
+    }
+  } while (0);
 }
 
 void LowerPriorityHelper(nsIChannel* aChannel) {

@@ -254,6 +254,25 @@ nsresult InterceptedHttpChannel::RedirectForResponseURL(
       mProxyResolveFlags, mProxyURI, mChannelId, contentPolicyType);
 
   newChannel->SetLoadInfo(redirectLoadInfo);
+  {
+    uint64_t innerWindowID = 0;
+    uint64_t outerWindowID = 0;
+
+    printf_stderr(
+        "[xeon] InterceptedHttpChannel::RedirectForResponseURL (%" PRIu64
+        " => %" PRIu64 ")\n",
+        mChannelId, newChannel->mChannelId);
+    mLoadInfo->GetInnerWindowID(&innerWindowID);
+    mLoadInfo->GetOuterWindowID(&outerWindowID);
+    printf_stderr("[xeon] (this) innerWindowID = %" PRIu64
+                  " outerWindowID = %" PRIu64 ")\n",
+                  innerWindowID, outerWindowID);
+    redirectLoadInfo->GetInnerWindowID(&innerWindowID);
+    redirectLoadInfo->GetOuterWindowID(&outerWindowID);
+    printf_stderr("[xeon] (that) innerWindowID = %" PRIu64
+                  " outerWindowID = %" PRIu64 ")\n",
+                  innerWindowID, outerWindowID);
+  }
   NS_ENSURE_SUCCESS(rv, rv);
 
   // Normally we don't propagate the LoadInfo's service worker tainting

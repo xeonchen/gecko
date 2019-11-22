@@ -1428,6 +1428,9 @@ nsresult HttpBaseChannel::nsContentEncodings::PrepareForNext(void) {
 NS_IMETHODIMP
 HttpBaseChannel::GetChannelId(uint64_t* aChannelId) {
   NS_ENSURE_ARG_POINTER(aChannelId);
+  // printf_stderr("[xeon] HttpBaseChannel::GetChannelId(ID=%" PRIu64
+  //               ") spec=%s this=%p\n",
+  //               mChannelId, mURI->GetSpecOrDefault().get(), this);
   *aChannelId = mChannelId;
   return NS_OK;
 }
@@ -1435,6 +1438,9 @@ HttpBaseChannel::GetChannelId(uint64_t* aChannelId) {
 NS_IMETHODIMP
 HttpBaseChannel::SetChannelId(uint64_t aChannelId) {
   mChannelId = aChannelId;
+  printf_stderr("[xeon] HttpBaseChannel::SetChannelId(ID=%" PRIu64
+                ") spec=%s this=%p\n",
+                mChannelId, mURI->GetSpecOrDefault().get(), this);
   return NS_OK;
 }
 
@@ -1493,6 +1499,29 @@ HttpBaseChannel::IsThirdPartyTrackingResource(bool* aIsTrackingResource) {
       !(mFirstPartyClassificationFlags && mThirdPartyClassificationFlags));
   *aIsTrackingResource = UrlClassifierCommon::IsTrackingClassificationFlag(
       mThirdPartyClassificationFlags);
+
+  do {
+    if (*aIsTrackingResource) {
+      nsAutoCString str(mURI->GetSpecOrDefault());
+      nsACString::const_iterator start, end;
+      str.BeginReading(start);
+      str.EndReading(end);
+
+      NS_NAMED_LITERAL_CSTRING(valuePrefix, "adnxs");
+
+      if (!FindInReadable(valuePrefix, start, end)) {
+        break;
+      }
+
+      printf_stderr(
+          "[xeon] HttpBaseChannel::IsThirdPartyTrackingResource(flag=%u) "
+          "channelId=%" PRIu64 " spec=%s [%p](%u, %u)\n",
+          static_cast<uint32_t>(mThirdPartyClassificationFlags),
+          this->ChannelId(), mURI->GetSpecOrDefault().get(), this, getpid(),
+          getppid());
+    }
+  } while (0);
+
   return NS_OK;
 }
 
@@ -2053,13 +2082,16 @@ nsresult HttpBaseChannel::GetTopWindowURI(nsIURI* aURIBeingLoaded,
   if (!mTopWindowURI) {
     util = services::GetThirdPartyUtil();
     if (!util) {
+      printf_stderr("[xeon] GetTopWindowURI 1\n");
       return NS_ERROR_NOT_AVAILABLE;
     }
     nsCOMPtr<mozIDOMWindowProxy> win;
     rv = util->GetTopWindowForChannel(this, aURIBeingLoaded,
                                       getter_AddRefs(win));
+    printf_stderr("[xeon] GetTopWindowURI rv=%08x\n", rv);
     if (NS_SUCCEEDED(rv)) {
       rv = util->GetURIFromWindow(win, getter_AddRefs(mTopWindowURI));
+      printf_stderr("[xeon] GetTopWindowURI' rv=%08x\n", rv);
 #if DEBUG
       if (mTopWindowURI) {
         nsCString spec;
@@ -3467,6 +3499,18 @@ nsresult HttpBaseChannel::SetupReplacementChannel(nsIURI* newURI,
        "[this=%p newChannel=%p preserveMethod=%d]",
        this, newChannel, preserveMethod));
 
+  {
+    RefPtr<HttpBaseChannel> newBaseChannel = do_QueryObject(newChannel);
+    printf_stderr(
+        "[xeon] (p=%d) SetupReplacementChannel ID(%" PRIu64 " => %" PRIu64
+        ") spec(%s => %s) TopWindowURI=%s %p => %p\n",
+        XRE_IsParentProcess(), mChannelId, newBaseChannel->mChannelId,
+        mURI->GetSpecOrDefault().get(),
+        newBaseChannel->mURI->GetSpecOrDefault().get(),
+        mTopWindowURI ? mTopWindowURI->GetSpecOrDefault().get() : "<nullptr>",
+        this, newBaseChannel.get());
+  }
+
   // Ensure the channel's loadInfo's result principal URI so that it's
   // either non-null or updated to the redirect target URI.
   // We must do this because in case the loadInfo's result principal URI
@@ -3581,7 +3625,10 @@ nsresult HttpBaseChannel::SetupReplacementChannel(nsIURI* newURI,
           mContentBlockingAllowListPrincipal);
 
       rv = realChannel->SetTopWindowURI(mTopWindowURI);
+      printf_stderr("[xeon] SetTopWindowURI\n");
       MOZ_ASSERT(NS_SUCCEEDED(rv));
+    } else {
+      printf_stderr("[xeon] SetTopWindowURI not called\n");
     }
 
     // update the DocumentURI indicator since we are being redirected.

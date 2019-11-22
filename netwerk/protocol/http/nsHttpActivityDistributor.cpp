@@ -31,7 +31,15 @@ class nsHttpActivityEvent : public Runnable {
         mTimestamp(aTimestamp),
         mExtraSizeData(aExtraSizeData),
         mExtraStringData(aExtraStringData),
-        mObservers(*aObservers) {}
+        mObservers(*aObservers) {
+    {
+      nsCOMPtr<nsIIdentChannel> httpChannel = do_QueryInterface(mHttpChannel);
+      if (httpChannel) {
+        printf_stderr("[xeon] nsHttpActivityEvent(%" PRIu64 ")\n",
+                      httpChannel->ChannelId());
+      }
+    }
+  }
 
   NS_IMETHOD Run() override {
     for (size_t i = 0; i < mObservers.Length(); i++) {

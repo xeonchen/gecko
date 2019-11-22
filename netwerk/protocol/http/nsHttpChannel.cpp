@@ -10396,6 +10396,25 @@ nsresult nsHttpChannel::RedirectToInterceptedChannel() {
   nsCOMPtr<nsILoadInfo> redirectLoadInfo =
       CloneLoadInfoForRedirect(mURI, nsIChannelEventSink::REDIRECT_INTERNAL);
   intercepted->SetLoadInfo(redirectLoadInfo);
+  {
+    uint64_t innerWindowID = 0;
+    uint64_t outerWindowID = 0;
+
+    printf_stderr(
+        "[xeon] InterceptedHttpChannel::RedirectToInterceptedChannel (%" PRIu64
+        " => %" PRIu64 ")\n",
+        mChannelId, intercepted->ChannelId());
+    mLoadInfo->GetInnerWindowID(&innerWindowID);
+    mLoadInfo->GetOuterWindowID(&outerWindowID);
+    printf_stderr("[xeon] (this) innerWindowID = %" PRIu64
+                  " outerWindowID = %" PRIu64 ")\n",
+                  innerWindowID, outerWindowID);
+    redirectLoadInfo->GetInnerWindowID(&innerWindowID);
+    redirectLoadInfo->GetOuterWindowID(&outerWindowID);
+    printf_stderr("[xeon] (that) innerWindowID = %" PRIu64
+                  " outerWindowID = %" PRIu64 ")\n",
+                  innerWindowID, outerWindowID);
+  }
 
   rv = SetupReplacementChannel(mURI, intercepted, true,
                                nsIChannelEventSink::REDIRECT_INTERNAL);

@@ -357,6 +357,10 @@ nsresult nsHttpTransaction::Init(
 
   // report the request header
   if (mActivityDistributor) {
+    {
+      printf_stderr("[xeon] nsHttpTransaction ObserveActivity [this=%p]\n",
+                    this);
+    }
     rv = mActivityDistributor->ObserveActivity(
         mChannel, NS_HTTP_ACTIVITY_TYPE_HTTP_TRANSACTION,
         NS_HTTP_ACTIVITY_SUBTYPE_REQUEST_HEADER, PR_Now(), 0, mReqHeaderBuf);
