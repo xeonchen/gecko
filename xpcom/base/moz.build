@@ -132,6 +132,7 @@ EXPORTS.mozilla += [
     'StaticMutex.h',
     'StaticPtr.h',
     'TupleCycleCollection.h',
+    'XDebug.h',
 ]
 
 SOURCES += [
@@ -142,6 +143,7 @@ SOURCES += [
 # nsLocalFileMac.h which upsets other files in this dir that have a different
 # idea about what `TextRange` means.
     'nsDumpUtils.cpp',
+    'XDebug.cpp',
 ]
 SOURCES['nsDebugImpl.cpp'].no_pgo = True
 

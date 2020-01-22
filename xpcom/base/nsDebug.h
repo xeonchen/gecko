@@ -14,6 +14,7 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/DbgMacro.h"
 #include "mozilla/Likely.h"
+#include "mozilla/XDebug.h"
 #include <stdarg.h>
 
 #ifdef DEBUG
