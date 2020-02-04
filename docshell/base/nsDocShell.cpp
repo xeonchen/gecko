@@ -1513,10 +1513,11 @@ nsDocShell::SetPrivateBrowsing(bool aUsePrivateBrowsing) {
 
   bool changed = aUsePrivateBrowsing != (mPrivateBrowsingId > 0);
   if (changed) {
-    mPrivateBrowsingId = aUsePrivateBrowsing ? 1 : 0;
+    mPrivateBrowsingId =
+        aUsePrivateBrowsing ? OriginAttributes::NewPrivateBrowsingId() : 0;
 
     if (mItemType != typeChrome) {
-      mOriginAttributes.SyncAttributesWithPrivateBrowsing(aUsePrivateBrowsing);
+      mOriginAttributes.SyncAttributesWithPrivateBrowsing(mPrivateBrowsingId);
     }
 
     if (mAffectPrivateSessionLifetime) {

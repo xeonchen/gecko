@@ -196,7 +196,7 @@ LoadContext::GetInterface(const nsIID& aIID, void** aResult) {
 
 static already_AddRefed<nsILoadContext> CreateInstance(bool aPrivate) {
   OriginAttributes oa;
-  oa.mPrivateBrowsingId = aPrivate ? 1 : 0;
+  oa.SetPrivateBrowsing(aPrivate);
 
   nsCOMPtr<nsILoadContext> lc = new LoadContext(oa);
 

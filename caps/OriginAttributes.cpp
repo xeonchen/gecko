@@ -119,6 +119,17 @@ void OriginAttributes::SetFirstPartyDomain(const bool aIsTopLevelDocument,
   mFirstPartyDomain = aDomain;
 }
 
+void OriginAttributes::SetPrivateBrowsing(bool aIsPrivateBrowsing) {
+  if ((mPrivateBrowsingId > 0) == aIsPrivateBrowsing) {
+    return;
+  }
+
+  mPrivateBrowsingId =
+      aIsPrivateBrowsing
+          ? OriginAttributes::NewPrivateBrowsingId()
+          : nsIScriptSecurityManager::DEFAULT_PRIVATE_BROWSING_ID;
+}
+
 void OriginAttributes::CreateSuffix(nsACString& aStr) const {
   URLParams params;
   nsAutoString value;
@@ -297,8 +308,8 @@ bool OriginAttributes::PopulateFromOrigin(const nsACString& aOrigin,
 }
 
 void OriginAttributes::SyncAttributesWithPrivateBrowsing(
-    bool aInPrivateBrowsing) {
-  mPrivateBrowsingId = aInPrivateBrowsing ? 1 : 0;
+    uint32_t aPrivateBrowsingId) {
+  mPrivateBrowsingId = aPrivateBrowsingId;
 }
 
 /* static */

@@ -4927,7 +4927,7 @@ mozilla::ipc::IPCResult ContentParent::CommonCreateWindow(
     nsCOMPtr<nsILoadContext> loadContext = thisBrowserHost->GetLoadContext();
     loadContext->GetOriginAttributes(openerOriginAttributes);
   } else if (Preferences::GetBool("browser.privatebrowsing.autostart")) {
-    openerOriginAttributes.mPrivateBrowsingId = 1;
+    openerOriginAttributes.SetPrivateBrowsing(true);
   }
 
   if (aOpenLocation == nsIBrowserDOMWindow::OPEN_NEWTAB) {

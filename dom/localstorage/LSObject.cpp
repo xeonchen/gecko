@@ -411,11 +411,17 @@ nsresult LSObject::CreateForPrincipal(nsPIDOMWindowInner* aWindow,
     return NS_ERROR_FAILURE;
   }
 
+  uint32_t privateBrowsingId;
+  rv = aStoragePrincipal->GetPrivateBrowsingId(&privateBrowsingId);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
   RefPtr<LSObject> object =
       new LSObject(aWindow, aPrincipal, aStoragePrincipal);
   object->mPrincipalInfo = std::move(principalInfo);
   object->mStoragePrincipalInfo = std::move(storagePrincipalInfo);
-  object->mPrivateBrowsingId = aPrivate ? 1 : 0;
+  object->mPrivateBrowsingId = privateBrowsingId;
   object->mClientId = clientId;
   object->mOrigin = origin;
   object->mOriginKey = originKey;

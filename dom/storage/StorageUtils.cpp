@@ -27,6 +27,7 @@ nsresult GenerateOriginKey(nsIPrincipal* aPrincipal,
   }
 
   aPrincipal->OriginAttributesRef().CreateSuffix(aOriginAttrSuffix);
+  XDD("aOriginAttrSuffix=", nsPromiseFlatCString(aOriginAttrSuffix).get());
 
   nsCOMPtr<nsIURI> uri;
   nsresult rv = aPrincipal->GetURI(getter_AddRefs(uri));

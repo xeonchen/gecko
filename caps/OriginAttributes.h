@@ -9,6 +9,7 @@
 
 #include "mozilla/dom/ChromeUtils.h"
 #include "mozilla/dom/ChromeUtilsBinding.h"
+#include "mozilla/StaticPrefs_browser.h"
 #include "mozilla/StaticPrefs_privacy.h"
 #include "nsIScriptSecurityManager.h"
 
@@ -31,6 +32,8 @@ class OriginAttributes : public dom::OriginAttributesDictionary {
                            const nsACString& aDomain);
   void SetFirstPartyDomain(const bool aIsTopLevelDocument,
                            const nsAString& aDomain);
+
+  void SetPrivateBrowsing(bool aIsPrivateBrowsing);
 
   enum {
     STRIP_FIRST_PARTY_DOMAIN = 0x01,
@@ -89,7 +92,7 @@ class OriginAttributes : public dom::OriginAttributesDictionary {
 
   // Helper function to match mIsPrivateBrowsing to existing private browsing
   // flags. Once all other flags are removed, this can be removed too.
-  void SyncAttributesWithPrivateBrowsing(bool aInPrivateBrowsing);
+  void SyncAttributesWithPrivateBrowsing(uint32_t aPrivateBrowsingId);
 
   // check if "privacy.firstparty.isolate" is enabled.
   static inline bool IsFirstPartyEnabled() {
@@ -116,6 +119,14 @@ class OriginAttributes : public dom::OriginAttributesDictionary {
   // returns true if the originAttributes suffix has mPrivateBrowsingId value
   // different than 0.
   static bool IsPrivateBrowsing(const nsACString& aOrigin);
+
+  static inline uint32_t NewPrivateBrowsingId() {
+    static Atomic<uint32_t> sPrivateBrowsingId(1u);
+    if (StaticPrefs::browser_privatebrowsing_partitioned()) {
+      return ++sPrivateBrowsingId;
+    }
+    return sPrivateBrowsingId;
+  }
 };
 
 class OriginAttributesPattern : public dom::OriginAttributesPatternDictionary {

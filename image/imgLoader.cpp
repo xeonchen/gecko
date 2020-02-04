@@ -904,7 +904,7 @@ static nsresult NewImageChannel(
     if (aTriggeringPrincipal) {
       attrs = aTriggeringPrincipal->OriginAttributesRef();
     }
-    attrs.mPrivateBrowsingId = aRespectPrivacy ? 1 : 0;
+    attrs.SetPrivateBrowsing(aRespectPrivacy);
 
     nsCOMPtr<nsILoadInfo> loadInfo = (*aResult)->LoadInfo();
     rv = loadInfo->SetOriginAttributes(attrs);

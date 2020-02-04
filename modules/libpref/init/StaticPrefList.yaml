@@ -1024,6 +1024,11 @@
   value: true
   mirror: always
 
+- name: browser.privatebrowsing.partitioned
+  type: bool
+  value: false
+  mirror: always
+
 #---------------------------------------------------------------------------
 # Prefs starting with "canvas."
 #---------------------------------------------------------------------------
