@@ -7666,6 +7666,11 @@
   value: false
   mirror: always
 
+- name: privacy.dynamic_firstparty.limitUnvisited
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+
 #---------------------------------------------------------------------------
 # Prefs starting with "security."
 #---------------------------------------------------------------------------
