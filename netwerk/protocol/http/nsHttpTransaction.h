@@ -418,7 +418,7 @@ class nsHttpTransaction final : public nsAHttpTransaction,
   // H2 websocket support
   RefPtr<SpdyConnectTransaction> mH2WSTransaction;
 
-  HttpTrafficCategory mTrafficCategory;
+  HttpTrafficInfo mTrafficInfo;
   bool mThroughCaptivePortal;
   int32_t mProxyConnectResponseCode;
 

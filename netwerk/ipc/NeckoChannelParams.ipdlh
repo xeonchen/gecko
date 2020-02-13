@@ -506,5 +506,10 @@ struct TransactionObserverResult
   nsresult closeReason;
 };
 
+struct HttpTrafficInfoCloneArgs
+{
+  uint8_t trackingCategory;
+};
+
 } // namespace net
 } // namespace mozilla

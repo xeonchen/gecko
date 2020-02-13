@@ -1067,11 +1067,11 @@ void nsHttpConnection::Close(nsresult reason, bool aIsShutdown) {
     mForceSendTimer = nullptr;
   }
 
-  if (!mTrafficCategory.IsEmpty()) {
+  if (!mTrafficInfo.IsEmpty()) {
     HttpTrafficAnalyzer* hta = gHttpHandler->GetHttpTrafficAnalyzer();
     if (hta) {
-      hta->IncrementHttpConnection(std::move(mTrafficCategory));
-      MOZ_ASSERT(mTrafficCategory.IsEmpty());
+      hta->IncrementHttpConnection(std::move(mTrafficInfo));
+      MOZ_ASSERT(mTrafficInfo.IsEmpty());
     }
   }
 
@@ -2856,13 +2856,13 @@ bool nsHttpConnection::CanAcceptWebsocket() {
   return mSpdySession->CanAcceptWebsocket();
 }
 
-void nsHttpConnection::SetTrafficCategory(HttpTrafficCategory aCategory) {
+void nsHttpConnection::SetTrafficInfo(HttpTrafficInfo aInfo) {
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
-  if (aCategory == HttpTrafficCategory::eInvalid ||
-      mTrafficCategory.Contains(aCategory)) {
+  if (!aInfo.IsValid() ||
+      mTrafficInfo.Contains(aInfo, HttpTrafficInfo::TrackingComparator())) {
     return;
   }
-  Unused << mTrafficCategory.AppendElement(aCategory);
+  Unused << mTrafficInfo.AppendElement(aInfo);
 }
 
 }  // namespace net

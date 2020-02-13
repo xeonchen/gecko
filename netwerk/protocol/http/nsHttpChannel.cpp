@@ -1400,7 +1400,7 @@ nsresult nsHttpChannel::SetupTransaction() {
   EnsureTopLevelOuterContentWindowId();
   EnsureRequestContext();
 
-  HttpTrafficCategory category = CreateTrafficCategory();
+  HttpTrafficInfo trafficInfo = CreateTrafficInfo();
   std::function<void()> observer;
   if (mTransactionObserver) {
     RefPtr<HttpTransactionShell> transaction = mTransaction;
@@ -1415,9 +1415,10 @@ nsresult nsHttpChannel::SetupTransaction() {
   rv = mTransaction->Init(
       mCaps, mConnectionInfo, &mRequestHead, mUploadStream, mReqContentLength,
       mUploadStreamHasHeaders, GetCurrentThreadEventTarget(), callbacks, this,
-      mTopLevelOuterContentWindowId, category, mRequestContext, mClassOfService,
-      mInitialRwin, mResponseTimeoutEnabled, mChannelId, std::move(observer),
-      std::move(pushCallback), mTransWithPushedStream, mPushedStreamId);
+      mTopLevelOuterContentWindowId, trafficInfo, mRequestContext,
+      mClassOfService, mInitialRwin, mResponseTimeoutEnabled, mChannelId,
+      std::move(observer), std::move(pushCallback), mTransWithPushedStream,
+      mPushedStreamId);
   if (NS_FAILED(rv)) {
     mTransaction = nullptr;
     return rv;
@@ -1426,12 +1427,12 @@ nsresult nsHttpChannel::SetupTransaction() {
   return rv;
 }
 
-HttpTrafficCategory nsHttpChannel::CreateTrafficCategory() {
+HttpTrafficInfo nsHttpChannel::CreateTrafficInfo() {
   MOZ_ASSERT(!mFirstPartyClassificationFlags ||
              !mThirdPartyClassificationFlags);
 
   if (!StaticPrefs::network_traffic_analyzer_enabled()) {
-    return HttpTrafficCategory::eInvalid;
+    return HttpTrafficInfo::InvalidTrafficInfo();
   }
 
   HttpTrafficAnalyzer::ClassOfService cos;
@@ -1470,7 +1471,7 @@ HttpTrafficCategory nsHttpChannel::CreateTrafficCategory() {
 
   bool isSystemPrincipal = mLoadInfo->LoadingPrincipal() &&
                            mLoadInfo->LoadingPrincipal()->IsSystemPrincipal();
-  return HttpTrafficAnalyzer::CreateTrafficCategory(
+  return HttpTrafficAnalyzer::CreateTrafficInfo(
       NS_UsePrivateBrowsing(this), isSystemPrincipal, isThirdParty, cos, tc);
 }
 

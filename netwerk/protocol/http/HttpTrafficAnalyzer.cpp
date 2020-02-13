@@ -68,7 +68,7 @@ static const Telemetry::LABELS_HTTP_TRAFFIC_ANALYSIS_3 gTelemetryLabel[] = {
 // | Category III          |   21   |   22   |   23   |
 // ====================================================
 
-HttpTrafficCategory HttpTrafficAnalyzer::CreateTrafficCategory(
+HttpTrafficInfo HttpTrafficAnalyzer::CreateTrafficInfo(
     bool aIsPrivateMode, bool aIsSystemPrincipal, bool aIsThirdParty,
     ClassOfService aClassOfService, TrackingClassification aClassification) {
   uint8_t category = aIsPrivateMode ? 12 : 0;
@@ -77,14 +77,14 @@ HttpTrafficCategory HttpTrafficAnalyzer::CreateTrafficCategory(
                   gKeyName[category].EqualsLiteral("Y0_N1Sys"));
     MOZ_ASSERT_IF(aIsPrivateMode,
                   gKeyName[category].EqualsLiteral("Y12_P1Sys"));
-    return static_cast<HttpTrafficCategory>(category);
+    return HttpTrafficInfo(category);
   }
   ++category;
 
   if (!aIsThirdParty) {
     MOZ_ASSERT_IF(!aIsPrivateMode, gKeyName[category].EqualsLiteral("Y1_N1"));
     MOZ_ASSERT_IF(aIsPrivateMode, gKeyName[category].EqualsLiteral("Y13_P1"));
-    return static_cast<HttpTrafficCategory>(category);
+    return HttpTrafficInfo(category);
   }
 
   switch (aClassification) {
@@ -94,7 +94,7 @@ HttpTrafficCategory HttpTrafficAnalyzer::CreateTrafficCategory(
                     gKeyName[category].EqualsLiteral("Y2_N3Oth"));
       MOZ_ASSERT_IF(aIsPrivateMode,
                     gKeyName[category].EqualsLiteral("Y14_P3Oth"));
-      return static_cast<HttpTrafficCategory>(category);
+      return HttpTrafficInfo(category);
     case TrackingClassification::eBasic:
       category += 2;
       break;
@@ -106,7 +106,7 @@ HttpTrafficCategory HttpTrafficAnalyzer::CreateTrafficCategory(
       break;
     default:
       MOZ_ASSERT(false, "incorrect classification");
-      return HttpTrafficCategory::eInvalid;
+      return HttpTrafficInfo::InvalidTrafficInfo();
   }
 
   switch (aClassOfService) {
@@ -127,7 +127,7 @@ HttpTrafficCategory HttpTrafficAnalyzer::CreateTrafficCategory(
                gKeyName[category].EqualsLiteral("Y18_P3ContentLead")) ||
               (aClassification == TrackingClassification::eFingerprinting &&
                gKeyName[category].EqualsLiteral("Y21_P3FpLead")));
-      return static_cast<HttpTrafficCategory>(category);
+      return HttpTrafficInfo(category);
     case ClassOfService::eBackground:
       ++category;
 
@@ -148,7 +148,7 @@ HttpTrafficCategory HttpTrafficAnalyzer::CreateTrafficCategory(
               (aClassification == TrackingClassification::eFingerprinting &&
                gKeyName[category].EqualsLiteral("Y22_P3FpBg")));
 
-      return static_cast<HttpTrafficCategory>(category);
+      return HttpTrafficInfo(category);
     case ClassOfService::eOther:
       category += 2;
 
@@ -169,46 +169,46 @@ HttpTrafficCategory HttpTrafficAnalyzer::CreateTrafficCategory(
               (aClassification == TrackingClassification::eFingerprinting &&
                gKeyName[category].EqualsLiteral("Y23_P3FpOth")));
 
-      return static_cast<HttpTrafficCategory>(category);
+      return HttpTrafficInfo(category);
   }
 
   MOZ_ASSERT(false, "incorrect class of service");
-  return HttpTrafficCategory::eInvalid;
+  return HttpTrafficInfo::InvalidTrafficInfo();
 }
 
-void HttpTrafficAnalyzer::IncrementHttpTransaction(
-    HttpTrafficCategory aCategory) {
+void HttpTrafficAnalyzer::IncrementHttpTransaction(HttpTrafficInfo aInfo) {
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
   MOZ_ASSERT(StaticPrefs::network_traffic_analyzer_enabled());
-  MOZ_ASSERT(aCategory != HttpTrafficCategory::eInvalid, "invalid category");
+  MOZ_ASSERT(aInfo.IsValid(), "invalid category");
 
   LOG(("HttpTrafficAnalyzer::IncrementHttpTransaction [%s] [this=%p]\n",
-       gKeyName[aCategory].get(), this));
+       gKeyName[aInfo.GetTrackingCategory()].get(), this));
 
-  Telemetry::AccumulateCategoricalKeyed(NS_LITERAL_CSTRING("Transaction"),
-                                        gTelemetryLabel[aCategory]);
+  Telemetry::AccumulateCategoricalKeyed(
+      NS_LITERAL_CSTRING("Transaction"),
+      gTelemetryLabel[aInfo.GetTrackingCategory()]);
 }
 
-void HttpTrafficAnalyzer::IncrementHttpConnection(
-    HttpTrafficCategory aCategory) {
+void HttpTrafficAnalyzer::IncrementHttpConnection(HttpTrafficInfo aInfo) {
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
   MOZ_ASSERT(StaticPrefs::network_traffic_analyzer_enabled());
-  MOZ_ASSERT(aCategory != HttpTrafficCategory::eInvalid, "invalid category");
+  MOZ_ASSERT(aInfo.IsValid(), "invalid category");
 
   LOG(("HttpTrafficAnalyzer::IncrementHttpConnection [%s] [this=%p]\n",
-       gKeyName[aCategory].get(), this));
+       gKeyName[aInfo.GetTrackingCategory()].get(), this));
 
-  Telemetry::AccumulateCategoricalKeyed(NS_LITERAL_CSTRING("Connection"),
-                                        gTelemetryLabel[aCategory]);
+  Telemetry::AccumulateCategoricalKeyed(
+      NS_LITERAL_CSTRING("Connection"),
+      gTelemetryLabel[aInfo.GetTrackingCategory()]);
 }
 
 void HttpTrafficAnalyzer::IncrementHttpConnection(
-    nsTArray<HttpTrafficCategory>&& aCategories) {
+    nsTArray<HttpTrafficInfo>&& aCategories) {
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
   MOZ_ASSERT(StaticPrefs::network_traffic_analyzer_enabled());
   MOZ_ASSERT(!aCategories.IsEmpty(), "empty category");
 
-  nsTArray<HttpTrafficCategory> categories(std::move(aCategories));
+  nsTArray<HttpTrafficInfo> categories(std::move(aCategories));
 
   LOG(("HttpTrafficAnalyzer::IncrementHttpConnection size=%" PRIuPTR
        " [this=%p]\n",
@@ -221,16 +221,17 @@ void HttpTrafficAnalyzer::IncrementHttpConnection(
   //   4) private 3rd-party (13 < Y < 24)
   // Normal and private transaction should not share the same connection,
   // and we choose 3rd-party prior than 1st-party.
-  HttpTrafficCategory best = categories[0];
+  HttpTrafficInfo best = categories[0];
   for (auto category : categories) {
-    MOZ_ASSERT(category != HttpTrafficCategory::eInvalid, "invalid category");
+    MOZ_ASSERT(category.IsValid(), "invalid category");
 
-    if (category == 0 || category == 1 || category == 12 || category == 13) {
+    auto idx = category.GetTrackingCategory();
+    if (idx == 0 || idx == 1 || idx == 12 || idx == 13) {
       // first party
-      MOZ_ASSERT(gKeyName[category].EqualsLiteral("Y0_N1Sys") ||
-                 gKeyName[category].EqualsLiteral("Y1_N1") ||
-                 gKeyName[category].EqualsLiteral("Y12_P1Sys") ||
-                 gKeyName[category].EqualsLiteral("Y13_P1"));
+      MOZ_ASSERT(gKeyName[idx].EqualsLiteral("Y0_N1Sys") ||
+                 gKeyName[idx].EqualsLiteral("Y1_N1") ||
+                 gKeyName[idx].EqualsLiteral("Y12_P1Sys") ||
+                 gKeyName[idx].EqualsLiteral("Y13_P1"));
       continue;
     }
     // third party
@@ -246,21 +247,24 @@ void HttpTrafficAnalyzer::IncrementHttpConnection(
 #define CLAMP_U32(num) \
   Clamp<uint32_t>(num, 0, std::numeric_limits<uint32_t>::max())
 
-void HttpTrafficAnalyzer::AccumulateHttpTransferredSize(
-    HttpTrafficCategory aCategory, uint64_t aBytesRead, uint64_t aBytesSent) {
+void HttpTrafficAnalyzer::AccumulateHttpTransferredSize(HttpTrafficInfo aInfo,
+                                                        uint64_t aBytesRead,
+                                                        uint64_t aBytesSent) {
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
   MOZ_ASSERT(StaticPrefs::network_traffic_analyzer_enabled());
-  MOZ_ASSERT(aCategory != HttpTrafficCategory::eInvalid, "invalid category");
+  MOZ_ASSERT(aInfo.IsValid(), "invalid category");
 
   LOG(("HttpTrafficAnalyzer::AccumulateHttpTransferredSize [%s] rb=%" PRIu64 " "
        "sb=%" PRIu64 " [this=%p]\n",
-       gKeyName[aCategory].get(), aBytesRead, aBytesSent, this));
+       gKeyName[aInfo.GetTrackingCategory()].get(), aBytesRead, aBytesSent,
+       this));
 
   // Telemetry supports uint32_t only, and we send KB here.
   auto total = CLAMP_U32((aBytesRead >> 10) + (aBytesSent >> 10));
   if (aBytesRead || aBytesSent) {
-    Telemetry::ScalarAdd(Telemetry::ScalarID::NETWORKING_DATA_TRANSFERRED_V3_KB,
-                         NS_ConvertUTF8toUTF16(gKeyName[aCategory]), total);
+    Telemetry::ScalarAdd(
+        Telemetry::ScalarID::NETWORKING_DATA_TRANSFERRED_V3_KB,
+        NS_ConvertUTF8toUTF16(gKeyName[aInfo.GetTrackingCategory()]), total);
   }
 }
 

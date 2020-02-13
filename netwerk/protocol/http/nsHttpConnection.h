@@ -255,7 +255,7 @@ class nsHttpConnection final : public nsAHttpSegmentReader,
   // HTTP/2 websocket support
   bool CanAcceptWebsocket();
 
-  void SetTrafficCategory(HttpTrafficCategory aCategory);
+  void SetTrafficInfo(HttpTrafficInfo aInfo);
 
  private:
   // Value (set in mTCPKeepaliveConfig) indicates which set of prefs to use.
@@ -446,7 +446,7 @@ class nsHttpConnection final : public nsAHttpSegmentReader,
   TimingStruct mBootstrappedTimings;
   bool mBootstrappedTimingsSet;
 
-  nsTArray<HttpTrafficCategory> mTrafficCategory;
+  nsTArray<HttpTrafficInfo> mTrafficInfo;
   bool mThroughCaptivePortal;
 
   // Http3

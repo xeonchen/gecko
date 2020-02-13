@@ -105,7 +105,7 @@ nsresult HttpTransactionParent::Init(
     nsIInputStream* requestBody, uint64_t requestContentLength,
     bool requestBodyHasHeaders, nsIEventTarget* target,
     nsIInterfaceRequestor* callbacks, nsITransportEventSink* eventsink,
-    uint64_t topLevelOuterContentWindowId, HttpTrafficCategory trafficCategory,
+    uint64_t topLevelOuterContentWindowId, HttpTrafficInfo aTrafficInfo,
     nsIRequestContext* requestContext, uint32_t classOfService,
     uint32_t initialRwin, bool responseTimeoutEnabled, uint64_t channelId,
     TransactionObserverFunc&& transactionObserver,
@@ -131,6 +131,9 @@ nsresult HttpTransactionParent::Init(
       !autoStream.Serialize(requestBody, SocketProcessParent::GetSingleton())) {
     return NS_ERROR_FAILURE;
   }
+
+  HttpTrafficInfoCloneArgs trafficInfo;
+  HttpTrafficInfo::SerializeHttpTrafficInfo(aTrafficInfo, trafficInfo);
 
   uint64_t requestContextID = requestContext ? requestContext->GetID() : 0;
 
@@ -163,8 +166,7 @@ nsresult HttpTransactionParent::Init(
   if (!SendInit(caps, infoArgs, *requestHead,
                 requestBody ? Some(autoStream.TakeValue()) : Nothing(),
                 requestContentLength, requestBodyHasHeaders,
-                topLevelOuterContentWindowId,
-                static_cast<uint8_t>(trafficCategory), requestContextID,
+                topLevelOuterContentWindowId, trafficInfo, requestContextID,
                 classOfService, initialRwin, responseTimeoutEnabled, mChannelId,
                 !!mTransactionObserver, pushedStreamArg, throttleQueue)) {
     return NS_ERROR_FAILURE;

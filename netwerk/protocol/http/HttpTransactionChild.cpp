@@ -57,15 +57,18 @@ nsresult HttpTransactionChild::InitInternal(
     uint32_t caps, const HttpConnectionInfoCloneArgs& infoArgs,
     nsHttpRequestHead* requestHead, nsIInputStream* requestBody,
     uint64_t requestContentLength, bool requestBodyHasHeaders,
-    uint64_t topLevelOuterContentWindowId, uint8_t httpTrafficCategory,
-    uint64_t requestContextID, uint32_t classOfService, uint32_t initialRwin,
-    bool responseTimeoutEnabled, uint64_t channelId,
-    const Maybe<H2PushedStreamArg>& aPushedStreamArg) {
+    uint64_t topLevelOuterContentWindowId,
+    const HttpTrafficInfoCloneArgs& httpTrafficInfo, uint64_t requestContextID,
+    uint32_t classOfService, uint32_t initialRwin, bool responseTimeoutEnabled,
+    uint64_t channelId, const Maybe<H2PushedStreamArg>& aPushedStreamArg) {
   LOG(("HttpTransactionChild::InitInternal [this=%p caps=%x]\n", this, caps));
 
   RefPtr<nsHttpConnectionInfo> cinfo =
       nsHttpConnectionInfo::DeserializeHttpConnectionInfoCloneArgs(infoArgs);
   nsCOMPtr<nsIRequestContext> rc = CreateRequestContext(requestContextID);
+
+  HttpTrafficInfo trafficInfo =
+      HttpTrafficInfo::DeserializeHttpTrafficInfoCloneArgs(httpTrafficInfo);
 
   HttpTransactionShell::OnPushCallback pushCallback = nullptr;
   if (caps & NS_HTTP_ONPUSH_LISTENER) {
@@ -95,8 +98,7 @@ nsresult HttpTransactionChild::InitInternal(
       caps, cinfo, requestHead, requestBody, requestContentLength,
       requestBodyHasHeaders, GetCurrentThreadEventTarget(),
       nullptr,  // TODO: security callback, fix in bug 1512479.
-      this, topLevelOuterContentWindowId,
-      static_cast<HttpTrafficCategory>(httpTrafficCategory), rc, classOfService,
+      this, topLevelOuterContentWindowId, trafficInfo, rc, classOfService,
       initialRwin, responseTimeoutEnabled, channelId,
       std::move(mTransactionObserver), std::move(pushCallback),
       transWithPushedStream, pushedStreamId);
@@ -146,10 +148,10 @@ mozilla::ipc::IPCResult HttpTransactionChild::RecvInit(
     const nsHttpRequestHead& aReqHeaders, const Maybe<IPCStream>& aRequestBody,
     const uint64_t& aReqContentLength, const bool& aReqBodyIncludesHeaders,
     const uint64_t& aTopLevelOuterContentWindowId,
-    const uint8_t& aHttpTrafficCategory, const uint64_t& aRequestContextID,
-    const uint32_t& aClassOfService, const uint32_t& aInitialRwin,
-    const bool& aResponseTimeoutEnabled, const uint64_t& aChannelId,
-    const bool& aHasTransactionObserver,
+    const HttpTrafficInfoCloneArgs& aHttpTrafficInfo,
+    const uint64_t& aRequestContextID, const uint32_t& aClassOfService,
+    const uint32_t& aInitialRwin, const bool& aResponseTimeoutEnabled,
+    const uint64_t& aChannelId, const bool& aHasTransactionObserver,
     const Maybe<H2PushedStreamArg>& aPushedStreamArg,
     const mozilla::Maybe<PInputChannelThrottleQueueChild*>& aThrottleQueue) {
   mRequestHead = aReqHeaders;
@@ -180,9 +182,9 @@ mozilla::ipc::IPCResult HttpTransactionChild::RecvInit(
 
   nsresult rv = InitInternal(
       aCaps, aArgs, &mRequestHead, mUploadStream, aReqContentLength,
-      aReqBodyIncludesHeaders, aTopLevelOuterContentWindowId,
-      aHttpTrafficCategory, aRequestContextID, aClassOfService, aInitialRwin,
-      aResponseTimeoutEnabled, aChannelId, aPushedStreamArg);
+      aReqBodyIncludesHeaders, aTopLevelOuterContentWindowId, aHttpTrafficInfo,
+      aRequestContextID, aClassOfService, aInitialRwin, aResponseTimeoutEnabled,
+      aChannelId, aPushedStreamArg);
   if (NS_FAILED(rv)) {
     LOG(("HttpTransactionChild::RecvInit: [this=%p] InitInternal failed!\n",
          this));

@@ -18,7 +18,7 @@ class nsIInterfaceRequestor;
 class nsIRequest;
 class nsIRequestContext;
 class nsITransportEventSink;
-enum HttpTrafficCategory : uint8_t;
+class HttpTrafficInfo;
 
 namespace mozilla {
 namespace net {
@@ -78,7 +78,7 @@ class HttpTransactionShell : public nsISupports {
       uint64_t reqContentLength, bool reqBodyIncludesHeaders,
       nsIEventTarget* consumerTarget, nsIInterfaceRequestor* callbacks,
       nsITransportEventSink* eventsink, uint64_t topLevelOuterContentWindowId,
-      HttpTrafficCategory trafficCategory, nsIRequestContext* requestContext,
+      HttpTrafficInfo trafficInfo, nsIRequestContext* requestContext,
       uint32_t classOfService, uint32_t initialRwin,
       bool responseTimeoutEnabled, uint64_t channelId,
       TransactionObserverFunc&& transactionObserver,
@@ -162,7 +162,7 @@ NS_DEFINE_STATIC_IID_ACCESSOR(HttpTransactionShell, HTTPTRANSACTIONSHELL_IID)
       uint64_t reqContentLength, bool reqBodyIncludesHeaders,                  \
       nsIEventTarget* consumerTarget, nsIInterfaceRequestor* callbacks,        \
       nsITransportEventSink* eventsink, uint64_t topLevelOuterContentWindowId, \
-      HttpTrafficCategory trafficCategory, nsIRequestContext* requestContext,  \
+      HttpTrafficInfo trafficInfo, nsIRequestContext* requestContext,          \
       uint32_t classOfService, uint32_t initialRwin,                           \
       bool responseTimeoutEnabled, uint64_t channelId,                         \
       TransactionObserverFunc&& transactionObserver,                           \
