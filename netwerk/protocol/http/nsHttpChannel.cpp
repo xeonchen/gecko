@@ -7038,6 +7038,30 @@ nsHttpChannel::SetChannelIsForDownload(bool aChannelIsForDownload) {
   return HttpBaseChannel::SetChannelIsForDownload(aChannelIsForDownload);
 }
 
+NS_IMETHODIMP
+nsHttpChannel::GetTopWindowURI(nsIURI** aTopWindowURI) {
+  // Use BrowsingContext to make this function fission-compatible.
+
+  MOZ_ASSERT(XRE_IsParentProcess());
+  MOZ_ASSERT(mLoadInfo);
+
+  RefPtr<mozilla::dom::BrowsingContext> ctx;
+  mLoadInfo->GetBrowsingContext(getter_AddRefs(ctx));
+  if (!ctx) {
+    return NS_ERROR_FAILURE;
+  }
+
+  ctx = ctx->Top();
+  if (!ctx || !ctx->Canonical()->GetCurrentWindowGlobal()) {
+    return NS_ERROR_FAILURE;
+  }
+
+  nsCOMPtr<nsIURI> uri =
+      ctx->Canonical()->GetCurrentWindowGlobal()->GetDocumentURI();
+  uri.forget(aTopWindowURI);
+  return NS_OK;
+}
+
 base::ProcessId nsHttpChannel::ProcessId() {
   nsCOMPtr<nsIParentChannel> parentChannel;
   NS_QueryNotificationCallbacks(this, parentChannel);

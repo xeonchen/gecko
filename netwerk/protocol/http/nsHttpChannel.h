@@ -156,6 +156,7 @@ class nsHttpChannel final : public HttpBaseChannel,
   // nsIHttpChannelInternal
   NS_IMETHOD SetupFallbackChannel(const char* aFallbackKey) override;
   NS_IMETHOD SetChannelIsForDownload(bool aChannelIsForDownload) override;
+  NS_IMETHOD GetTopWindowURI(nsIURI** aTopWindowURI) override;
   NS_IMETHOD GetNavigationStartTimeStamp(TimeStamp* aTimeStamp) override;
   NS_IMETHOD SetNavigationStartTimeStamp(TimeStamp aTimeStamp) override;
   NS_IMETHOD CancelByURLClassifier(nsresult aErrorCode) override;
