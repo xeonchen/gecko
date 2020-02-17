@@ -116,6 +116,20 @@ function resetGlobalLimit() {
   SpecialPowers.clearUserPref("dom.quotaManager.temporaryStorage.fixedLimit");
 }
 
+function storageInitialized(callback) {
+  let request = SpecialPowers._getQuotaManager().storageInitialized();
+  request.callback = callback;
+
+  return request;
+}
+
+function temporaryStorageInitialized(callback) {
+  let request = SpecialPowers._getQuotaManager().temporaryStorageInitialized();
+  request.callback = callback;
+
+  return request;
+}
+
 function init(callback) {
   let request = SpecialPowers._getQuotaManager().init();
   request.callback = callback;
@@ -679,4 +693,24 @@ function verifyStorage(packageDefinitionRelativePaths, key) {
   log("Stringified expected entries: " + JSON.stringify(expectedEntries));
 
   compareEntries(currentEntries, expectedEntries, key);
+}
+
+async function verifyInitializationStatus(wantStorage, wantTemporaryStorage) {
+  let request = storageInitialized();
+  await requestFinished(request);
+
+  if (wantStorage) {
+    ok(request.result, "Storage is initialized");
+  } else {
+    ok(!request.result, "Storage is not initialized");
+  }
+
+  request = temporaryStorageInitialized();
+  await requestFinished(request);
+
+  if (wantTemporaryStorage) {
+    ok(request.result, "Temporary storage is initialized");
+  } else {
+    ok(!request.result, "Temporary storage is not initialized");
+  }
 }
