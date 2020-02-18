@@ -1514,7 +1514,7 @@ nsDocShell::SetPrivateBrowsing(bool aUsePrivateBrowsing) {
   bool changed = aUsePrivateBrowsing != (mPrivateBrowsingId > 0);
   if (changed) {
     mPrivateBrowsingId =
-        aUsePrivateBrowsing ? OriginAttributes::NewPrivateBrowsingId() : 0;
+        aUsePrivateBrowsing ? OriginAttributes::NextPrivateBrowsingId() : 0;
 
     if (mItemType != typeChrome) {
       mOriginAttributes.SyncAttributesWithPrivateBrowsing(mPrivateBrowsingId);

@@ -120,7 +120,8 @@ class OriginAttributes : public dom::OriginAttributesDictionary {
   // different than 0.
   static bool IsPrivateBrowsing(const nsACString& aOrigin);
 
-  static inline uint32_t NewPrivateBrowsingId() {
+  static inline uint32_t NextPrivateBrowsingId() {
+    MOZ_ASSERT(XRE_IsParentProcess());
     static Atomic<uint32_t> sPrivateBrowsingId(1u);
     if (StaticPrefs::browser_privatebrowsing_partitioned()) {
       return ++sPrivateBrowsingId;

@@ -126,7 +126,7 @@ void OriginAttributes::SetPrivateBrowsing(bool aIsPrivateBrowsing) {
 
   mPrivateBrowsingId =
       aIsPrivateBrowsing
-          ? OriginAttributes::NewPrivateBrowsingId()
+          ? OriginAttributes::NextPrivateBrowsingId()
           : nsIScriptSecurityManager::DEFAULT_PRIVATE_BROWSING_ID;
 }
 

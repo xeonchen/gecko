@@ -1510,7 +1510,7 @@ function _loadURI(browser, uri, params = {}) {
         browser.webNavigation.setOriginAttributesBeforeLoading({
           userContextId,
           privateBrowsingId: PrivateBrowsingUtils.isBrowserPrivate(browser)
-            ? 1
+            ? /*1*/
             : 0,
         });
       }
