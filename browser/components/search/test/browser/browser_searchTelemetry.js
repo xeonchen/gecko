@@ -148,28 +148,43 @@ add_task(async function test_simple_search_page_visit_telemetry() {
   searchCounts.clear();
   Services.telemetry.clearScalars();
 
-  await BrowserTestUtils.withNewTab(
-    {
-      gBrowser,
-      /* URL must not be in the cache */
-      url: getSERPUrl(getPageUrl()) + `&random=${Math.random()}`,
-    },
-    async () => {
-      let scalars = {};
-      const key = "browser.search.data_transferred";
-
-      await TestUtils.waitForCondition(() => {
-        scalars =
-          Services.telemetry.getSnapshotForKeyedScalars("main", false).parent ||
-          {};
-        return key in scalars;
-      }, "should have the expected keyed scalars");
-
-      const scalar = scalars[key];
-      Assert.ok("example" in scalar, "correct telemetry category");
-      Assert.notEqual(scalars[key].example, 0, "bandwidth logged");
-    }
+  let tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    /* URL must not be in the cache */
+    getSERPUrl(getPageUrl()) + `&random=${Math.random()}`
   );
+
+  const key = "browser.search.data_transferred";
+
+  const bytesTransferred1 = await TestUtils.waitForCondition(() => {
+    let scalars =
+      Services.telemetry.getSnapshotForKeyedScalars("main", false).parent || {};
+    return key in scalars && scalars[key].example;
+  }, "should have the expected keyed scalars");
+  Assert.notEqual(bytesTransferred1, 0, "bandwidth logged");
+
+  // non-SERP iframe should also be recorded
+  const thirdPartyUrl = getPageUrl(true, true) + `?random=${Math.random()}`;
+  await SpecialPowers.spawn(tab.linkedBrowser, [thirdPartyUrl], url => {
+    return new Promise(resolve => {
+      let iframe = content.document.createElement("iframe");
+      iframe.src = url;
+      iframe.onload = () => resolve();
+      content.document.body.appendChild(iframe);
+    });
+  });
+
+  const bytesTransferred2 = await TestUtils.waitForCondition(() => {
+    let scalars =
+      Services.telemetry.getSnapshotForKeyedScalars("main", false).parent || {};
+    return key in scalars && scalars[key].example;
+  }, "should have the expected keyed scalars");
+  Assert.ok(
+    bytesTransferred1 < bytesTransferred2,
+    "expected keyed scalars should be increased"
+  );
+
+  BrowserTestUtils.removeTab(tab);
 });
 
 add_task(async function test_follow_on_visit() {
