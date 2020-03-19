@@ -227,6 +227,11 @@ class nsCookieService final : public nsICookieService,
                         const OriginAttributes& aOriginAttrs,
                         nsTArray<nsCookie*>& aCookieList);
 
+  void MaybeCloneCookiesForStoragePrincipal(
+      nsICookieJarSettings* aCookieJarSettings, nsIURI* aHostURI,
+      const nsACString& aBaseDomain, const nsACString& aHost,
+      const OriginAttributes& aOriginAttrs);
+
   /**
    * This method is a helper that allows calling nsICookieManager::Remove()
    * with OriginAttributes parameter.
@@ -343,6 +348,9 @@ class nsCookieService final : public nsICookieService,
   nsresult CountCookiesFromHostInternal(const nsACString& aHost,
                                         uint32_t aPrivateBrowsingId,
                                         uint32_t* aCountFromHost);
+  nsresult CountCookiesFromHostInternalWithOriginAttributes(
+      const nsACString& aHost, const OriginAttributes& aAttrs,
+      uint32_t* aCountFromHost);
 
  protected:
   nsresult RemoveCookiesFromExactHost(

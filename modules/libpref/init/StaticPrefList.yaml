@@ -7916,6 +7916,16 @@
   value: false
   mirror: always
 
+- name: privacy.dynamic_firstparty.heuristic.clone
+  type: RelaxedAtomicBool
+  value: true
+  mirror: always
+
+- name: privacy.dynamic_firstparty.heuristic.clone_time
+  type: int32_t
+  value: 120
+  mirror: always
+
 #---------------------------------------------------------------------------
 # Prefs starting with "security."
 #---------------------------------------------------------------------------

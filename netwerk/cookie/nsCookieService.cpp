@@ -66,6 +66,9 @@
 #include "nsTPriorityQueue.h"
 #include "nsVariant.h"
 
+#include "nsINavHistoryService.h"
+#include "nsToolkitCompsCID.h"
+
 using namespace mozilla;
 using namespace mozilla::dom;
 using namespace mozilla::net;
@@ -3051,6 +3054,9 @@ void nsCookieService::GetCookiesForURI(
       break;
   }
 
+  MaybeCloneCookiesForStoragePrincipal(cookieJarSettings, aHostURI, baseDomain,
+                                       hostFromURI, aOriginAttrs);
+
   // Note: The following permissions logic is mirrored in
   // extensions::MatchPattern::MatchesCookie.
   // If it changes, please update that function, or file a bug for someone
@@ -3153,6 +3159,161 @@ void nsCookieService::GetCookiesForURI(
   // this is required per RFC2109.  if cookies match in length,
   // then sort by creation time (see bug 236772).
   aCookieList.Sort(CompareCookiesForSending());
+}
+
+// check if there's any visit within the given seconds
+static bool HasEligibleVisit(const nsACString& aBaseDomain, int64_t aSecond) {
+  nsresult rv;
+
+  nsCOMPtr<nsINavHistoryService> histSrv =
+      do_GetService(NS_NAVHISTORYSERVICE_CONTRACTID);
+  if (!histSrv) {
+    return false;
+  }
+  nsCOMPtr<nsINavHistoryQuery> histQuery;
+  rv = histSrv->GetNewQuery(getter_AddRefs(histQuery));
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  rv = histQuery->SetDomain(aBaseDomain);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  rv = histQuery->SetDomainIsHost(false);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  PRTime beginTime = PR_Now() - PRTime(PR_USEC_PER_SEC) * aSecond;
+  rv = histQuery->SetBeginTime(beginTime);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  nsCOMPtr<nsINavHistoryQueryOptions> histQueryOpts;
+  rv = histSrv->GetNewQueryOptions(getter_AddRefs(histQueryOpts));
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  rv =
+      histQueryOpts->SetResultType(nsINavHistoryQueryOptions::RESULTS_AS_VISIT);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  rv = histQueryOpts->SetMaxResults(1);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  rv = histQueryOpts->SetQueryType(
+      nsINavHistoryQueryOptions::QUERY_TYPE_HISTORY);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  nsCOMPtr<nsINavHistoryResult> histResult;
+  rv = histSrv->ExecuteQuery(histQuery, histQueryOpts,
+                             getter_AddRefs(histResult));
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  nsCOMPtr<nsINavHistoryContainerResultNode> histResultContainer;
+  rv = histResult->GetRoot(getter_AddRefs(histResultContainer));
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  rv = histResultContainer->SetContainerOpen(true);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  uint32_t childCount = 0;
+  rv = histResultContainer->GetChildCount(&childCount);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  rv = histResultContainer->SetContainerOpen(false);
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return false;
+  }
+
+  return childCount > 0;
+}
+
+void nsCookieService::MaybeCloneCookiesForStoragePrincipal(
+    nsICookieJarSettings* aCookieJarSettings, nsIURI* aHostURI,
+    const nsACString& aBaseDomain, const nsACString& aHost,
+    const OriginAttributes& aOriginAttrs) {
+  if (aCookieJarSettings->GetCookieBehavior() !=
+          nsICookieService::BEHAVIOR_REJECT_TRACKER_AND_PARTITION_FOREIGN ||
+      !StaticPrefs::privacy_dynamic_firstparty_heuristic_clone()) {
+    return;
+  }
+
+  // check if this is a third-party request
+  if (aOriginAttrs.mFirstPartyDomain.IsEmpty()) {
+    return;
+  }
+
+  // check if we have cookies for this origin
+  uint32_t priorCookieCount = 0;
+  CountCookiesFromHostInternalWithOriginAttributes(aHost, aOriginAttrs,
+                                                   &priorCookieCount);
+  if (priorCookieCount) {
+    MOZ_LOG(gCookieLog, LogLevel::Debug,
+            ("MaybeCloneCookiesForStoragePrincipal: priorCookieCount=%u\n",
+             priorCookieCount));
+    return;
+  }
+
+  // check history
+  auto sec = StaticPrefs::privacy_dynamic_firstparty_heuristic_clone_time();
+  if (!HasEligibleVisit(aBaseDomain, sec)) {
+    MOZ_LOG(gCookieLog, LogLevel::Debug,
+            ("MaybeCloneCookiesForStoragePrincipal: no eligible visit\n"));
+    return;
+  }
+
+  MOZ_LOG(gCookieLog, LogLevel::Debug,
+          ("MaybeCloneCookiesForStoragePrincipal: cloning for %s\n",
+           PromiseFlatCString(aHost).get()));
+
+  // prepare source cookies
+  OriginAttributes attrs(aOriginAttrs);
+  attrs.StripAttributes(OriginAttributes::STRIP_FIRST_PARTY_DOMAIN);
+  nsAutoCString baseDomain(aBaseDomain);
+  nsCookieKey key(baseDomain, attrs);
+  nsCookieEntry* entry = mDBState->hostTable.GetEntry(key);
+
+  const nsCookieEntry::ArrayType& cookies = entry->GetCookies();
+  for (nsCookieEntry::IndexType i = 0; i < cookies.Length(); ++i) {
+    nsCookie* cookie = cookies[i];
+    int32_t sameSite;
+    if (!cookie->IsSecure() || !cookie->IsHttpOnly() ||
+        NS_FAILED(cookie->GetSameSite(&sameSite)) ||
+        sameSite != nsICookie::SAMESITE_NONE) {
+      continue;
+    }
+
+    MOZ_LOG(gCookieLog, LogLevel::Debug,
+            ("MaybeCloneCookiesForStoragePrincipal: clone %s\n",
+             cookie->Name().get()));
+    RefPtr<nsCookie> newCookie = nsCookie::Create(
+        cookie->Name(), cookie->Value(), cookie->Host(), cookie->Path(),
+        cookie->Expiry(), cookie->LastAccessed(), cookie->CreationTime(),
+        cookie->IsSession(), cookie->IsSecure(), cookie->IsHttpOnly(),
+        aOriginAttrs, cookie->SameSite(), cookie->RawSameSite());
+
+    nsCookieKey newKey(baseDomain, aOriginAttrs);
+    AddInternal(newKey, newCookie, PR_Now(), aHostURI, EmptyCString(), true);
+  }
 }
 
 void nsCookieService::GetCookieStringInternal(
@@ -4678,8 +4839,19 @@ nsCookieService::CountCookiesFromHost(const nsACString& aHost,
 nsresult nsCookieService::CountCookiesFromHostInternal(
     const nsACString& aHost, uint32_t aPrivateBrowsingId,
     uint32_t* aCountFromHost) {
+  OriginAttributes attrs;
+  attrs.mPrivateBrowsingId = aPrivateBrowsingId;
+
+  return CountCookiesFromHostInternalWithOriginAttributes(aHost, attrs,
+                                                          aCountFromHost);
+}
+
+nsresult nsCookieService::CountCookiesFromHostInternalWithOriginAttributes(
+    const nsACString& aHost, const OriginAttributes& aAttrs,
+    uint32_t* aCountFromHost) {
   AutoRestore<DBState*> savePrevDBState(mDBState);
-  mDBState = (aPrivateBrowsingId > 0) ? mPrivateDBState : mDefaultDBState;
+  mDBState =
+      (aAttrs.mPrivateBrowsingId > 0) ? mPrivateDBState : mDefaultDBState;
 
   if (!mDBState) {
     NS_WARNING("No DBState! Profile already closed?");
@@ -4697,9 +4869,7 @@ nsresult nsCookieService::CountCookiesFromHostInternal(
   rv = GetBaseDomainFromHost(mTLDService, host, baseDomain);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  OriginAttributes attrs;
-  attrs.mPrivateBrowsingId = aPrivateBrowsingId;
-  nsCookieKey key(baseDomain, attrs);
+  nsCookieKey key(baseDomain, aAttrs);
 
   // Return a count of all cookies, including expired.
   nsCookieEntry* entry = mDBState->hostTable.GetEntry(key);
