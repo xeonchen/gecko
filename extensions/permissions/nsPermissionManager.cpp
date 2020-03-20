@@ -165,6 +165,10 @@ bool IsOAForceStripPermission(const nsACString& aType) {
 void MaybeStripOAs(bool aForceStrip, OriginAttributes& aOriginAttributes) {
   uint32_t flags = 0;
 
+  if (aForceStrip || !StaticPrefs::permissions_isolateBy_firstPartyDomain()) {
+    flags |= OriginAttributes::STRIP_FIRST_PARTY_DOMAIN;
+  }
+
   if (aForceStrip || !StaticPrefs::permissions_isolateBy_privateBrowsing()) {
     flags |= OriginAttributes::STRIP_PRIVATE_BROWSING_ID;
   }

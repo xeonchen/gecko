@@ -7544,6 +7544,11 @@
   value: true
   mirror: always
 
+- name: permissions.isolateBy.firstPartyDomain
+  type: bool
+  value: false
+  mirror: always
+
 - name: permissions.isolateBy.userContext
   type: bool
   value: false
