@@ -7,6 +7,8 @@
 #include "nsScriptSecurityManager.h"
 
 #include "mozilla/ArrayUtils.h"
+#include "mozilla/Atomics.h"
+#include "mozilla/StaticPrefs_browser.h"
 #include "mozilla/StaticPrefs_extensions.h"
 #include "mozilla/StaticPrefs_security.h"
 #include "mozilla/StoragePrincipalHelper.h"
@@ -380,6 +382,21 @@ nsScriptSecurityManager::GetChannelURIPrincipal(nsIChannel* aChannel,
       BasePrincipal::CreateContentPrincipal(uri, attrs);
   prin.forget(aPrincipal);
   return *aPrincipal ? NS_OK : NS_ERROR_FAILURE;
+}
+
+NS_IMETHODIMP
+nsScriptSecurityManager::GetNextUnusedPrivateBrowsingID(
+    uint32_t* aNextUnusedPrivateBrowsingID) {
+  MOZ_ASSERT(aNextUnusedPrivateBrowsingID);
+
+  static Atomic<uint32_t> sNextUnusedPrivateBrowsingID(1);
+
+  if (StaticPrefs::browser_privatebrowsing_isolated()) {
+    ++sNextUnusedPrivateBrowsingID;
+  }
+
+  *aNextUnusedPrivateBrowsingID = sNextUnusedPrivateBrowsingID;
+  return NS_OK;
 }
 
 /////////////////////////////

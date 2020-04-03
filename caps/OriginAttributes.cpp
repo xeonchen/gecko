@@ -6,9 +6,11 @@
 
 #include "mozilla/OriginAttributes.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/StaticPrefs_browser.h"
 #include "mozilla/dom/BlobURLProtocolHandler.h"
 #include "mozilla/dom/URLSearchParams.h"
 #include "mozilla/dom/quota/QuotaManager.h"
+#include "nsContentUtils.h"
 #include "nsIEffectiveTLDService.h"
 #include "nsIURI.h"
 #include "nsURLHelper.h"
@@ -141,6 +143,8 @@ void OriginAttributes::CreateSuffix(nsACString& aStr) const {
   }
 
   if (mPrivateBrowsingId) {
+    MOZ_ASSERT_IF(StaticPrefs::browser_privatebrowsing_isolated(),
+                  mPrivateBrowsingId != 1);
     value.Truncate();
     value.AppendInt(mPrivateBrowsingId);
     params.Set(NS_LITERAL_STRING("privateBrowsingId"), value);
@@ -204,6 +208,8 @@ class MOZ_STACK_CLASS PopulateFromSuffixIterator final
     // to the suffix. Set to default before iterating to fix this.
     mOriginAttributes->mPrivateBrowsingId =
         nsIScriptSecurityManager::DEFAULT_PRIVATE_BROWSING_ID;
+    MOZ_ASSERT_IF(StaticPrefs::browser_privatebrowsing_isolated(),
+                  mOriginAttributes->mPrivateBrowsingId != 1);
   }
 
   bool URLParamsIterator(const nsAString& aName,
@@ -239,6 +245,8 @@ class MOZ_STACK_CLASS PopulateFromSuffixIterator final
       NS_ENSURE_SUCCESS(rv, false);
       NS_ENSURE_TRUE(val >= 0 && val <= UINT32_MAX, false);
       mOriginAttributes->mPrivateBrowsingId = static_cast<uint32_t>(val);
+      MOZ_ASSERT_IF(StaticPrefs::browser_privatebrowsing_isolated(),
+                    mOriginAttributes->mPrivateBrowsingId != 1);
 
       return true;
     }
@@ -298,7 +306,15 @@ bool OriginAttributes::PopulateFromOrigin(const nsACString& aOrigin,
 
 void OriginAttributes::SyncAttributesWithPrivateBrowsing(
     bool aInPrivateBrowsing) {
-  mPrivateBrowsingId = aInPrivateBrowsing ? 1 : 0;
+  if (!aInPrivateBrowsing) {
+    mPrivateBrowsingId = 0;
+    return;
+  }
+
+  nsIScriptSecurityManager* ssm = nsContentUtils::GetSecurityManager();
+  mPrivateBrowsingId = ssm->GetNextUnusedPrivateBrowsingID();
+  MOZ_ASSERT_IF(StaticPrefs::browser_privatebrowsing_isolated(),
+                mPrivateBrowsingId != 1);
 }
 
 /* static */
@@ -309,6 +325,8 @@ bool OriginAttributes::IsPrivateBrowsing(const nsACString& aOrigin) {
     return false;
   }
 
+  MOZ_ASSERT_IF(StaticPrefs::browser_privatebrowsing_isolated(),
+                attrs.mPrivateBrowsingId != 1);
   return !!attrs.mPrivateBrowsingId;
 }
 

@@ -934,6 +934,12 @@
   value: false
   mirror: always
 
+# isolate different private browsing tabs
+- name: browser.privatebrowsing.isolated
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+
 # Blocked plugin content
 - name: browser.safebrowsing.blockedURIs.enabled
   type: bool
