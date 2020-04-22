@@ -4344,9 +4344,11 @@ already_AddRefed<nsICSSDeclaration> nsGlobalWindowInner::GetComputedStyleHelper(
 
 Storage* nsGlobalWindowInner::GetSessionStorage(ErrorResult& aError) {
   nsIPrincipal* principal = GetPrincipal();
+  nsIPrincipal* storagePrincipal = GetEffectiveStoragePrincipal();
   BrowsingContext* browsingContext = GetBrowsingContext();
 
-  if (!principal || !browsingContext || !Storage::StoragePrefIsEnabled()) {
+  if (!principal || !storagePrincipal || !browsingContext ||
+      !Storage::StoragePrefIsEnabled()) {
     return nullptr;
   }
 
@@ -4354,11 +4356,7 @@ Storage* nsGlobalWindowInner::GetSessionStorage(ErrorResult& aError) {
     MOZ_LOG(gDOMLeakPRLogInner, LogLevel::Debug,
             ("nsGlobalWindowInner %p has %p sessionStorage", this,
              mSessionStorage.get()));
-    bool canAccess = principal->Subsumes(mSessionStorage->Principal());
-    NS_ASSERTION(canAccess,
-                 "This window owned sessionStorage "
-                 "that could not be accessed!");
-    if (!canAccess) {
+    if (storagePrincipal != mSessionStorage->StoragePrincipal()) {
       mSessionStorage = nullptr;
     }
   }
@@ -4407,7 +4405,8 @@ Storage* nsGlobalWindowInner::GetSessionStorage(ErrorResult& aError) {
     // BEHAVIOR_LIMIT_FOREIGN and this is a third-party window. This will return
     // eDeny with a reason of STATE_COOKIES_BLOCKED_FOREIGN.
     //
-    // 3. Tracking protection (BEHAVIOR_REJECT_TRACKER) is in effect and
+    // 3. Tracking protection (BEHAVIOR_REJECT_TRACKER and
+    // BEHAVIOR_REJECT_TRACKER_AND_PARTITION_FOREIGN) is in effect and
     // IsThirdPartyTrackingResourceWindow() returned true and there wasn't a
     // permission that allows it. This will return ePartitionTrackersOrDeny with
     // a reason of STATE_COOKIES_BLOCKED_TRACKER or
@@ -4434,8 +4433,7 @@ Storage* nsGlobalWindowInner::GetSessionStorage(ErrorResult& aError) {
     }
 
     RefPtr<Storage> storage;
-    // No StoragePrincipal for sessions.
-    aError = storageManager->CreateStorage(this, principal, principal,
+    aError = storageManager->CreateStorage(this, principal, storagePrincipal,
                                            documentURI, IsPrivateBrowsing(),
                                            getter_AddRefs(storage));
     if (aError.Failed()) {
