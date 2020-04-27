@@ -4368,6 +4368,19 @@ already_AddRefed<nsICSSDeclaration> nsGlobalWindowInner::GetComputedStyleHelper(
                             nullptr);
 }
 
+static void PrintPrincipal(const nsACString& aPrefix,
+                           nsIPrincipal* aPrincipal) {
+  if (!aPrincipal) {
+    printf_stderr("[xeon][%s] (null)\n", PromiseFlatCString(aPrefix).get());
+    return;
+  }
+  nsAutoCString originNoSuffix, originSuffix;
+  aPrincipal->GetOriginNoSuffix(originNoSuffix);
+  aPrincipal->GetOriginSuffix(originSuffix);
+  printf_stderr("[xeon][%s] %s%s\n", PromiseFlatCString(aPrefix).get(),
+                originNoSuffix.get(), originSuffix.get());
+}
+
 Storage* nsGlobalWindowInner::GetSessionStorage(ErrorResult& aError) {
   nsIPrincipal* principal = GetPrincipal();
   nsIPrincipal* storagePrincipal = IntrinsicStoragePrincipal();
@@ -4378,7 +4391,11 @@ Storage* nsGlobalWindowInner::GetSessionStorage(ErrorResult& aError) {
     return nullptr;
   }
 
+  PrintPrincipal(NS_LITERAL_CSTRING("doc.storagePrincipal"), storagePrincipal);
+  printf_stderr("[xeon] mSessionStorage=%p\n", mSessionStorage.get());
   if (mSessionStorage) {
+    PrintPrincipal(NS_LITERAL_CSTRING("storage.storagePrincipal"),
+                   mSessionStorage->StoragePrincipal());
     MOZ_LOG(gDOMLeakPRLogInner, LogLevel::Debug,
             ("nsGlobalWindowInner %p has %p sessionStorage", this,
              mSessionStorage.get()));
@@ -4386,6 +4403,7 @@ Storage* nsGlobalWindowInner::GetSessionStorage(ErrorResult& aError) {
         principal->Subsumes(mSessionStorage->Principal()) &&
         storagePrincipal->Subsumes(mSessionStorage->StoragePrincipal());
     if (!canAccess) {
+      printf_stderr("[xeon] reset mSessionStorage\n");
       mSessionStorage = nullptr;
     }
   }
@@ -4454,6 +4472,7 @@ Storage* nsGlobalWindowInner::GetSessionStorage(ErrorResult& aError) {
       return nullptr;
     }
 
+    printf_stderr("[xeon] browsingContext=%p\n", browsingContext);
     const RefPtr<SessionStorageManager> storageManager =
         browsingContext->GetSessionStorageManager();
     if (!storageManager) {
@@ -4486,6 +4505,7 @@ Storage* nsGlobalWindowInner::GetSessionStorage(ErrorResult& aError) {
           ("nsGlobalWindowInner %p returns %p sessionStorage", this,
            mSessionStorage.get()));
 
+  PrintPrincipal(NS_LITERAL_CSTRING("finalSessionStorage"), storagePrincipal);
   return mSessionStorage;
 }
 

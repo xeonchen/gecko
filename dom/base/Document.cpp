@@ -16145,7 +16145,21 @@ nsICookieJarSettings* Document::CookieJarSettings() {
   return mCookieJarSettings;
 }
 
+static void PrintPrincipal(const nsACString& aPrefix,
+                           nsIPrincipal* aPrincipal) {
+  if (!aPrincipal) {
+    printf_stderr("[xeon][%s] (null)\n", PromiseFlatCString(aPrefix).get());
+    return;
+  }
+  nsAutoCString originNoSuffix, originSuffix;
+  aPrincipal->GetOriginNoSuffix(originNoSuffix);
+  aPrincipal->GetOriginSuffix(originSuffix);
+  printf_stderr("[xeon][%s] %s%s\n", PromiseFlatCString(aPrefix).get(),
+                originNoSuffix.get(), originSuffix.get());
+}
+
 nsIPrincipal* Document::EffectiveStoragePrincipal() const {
+  printf_stderr("[xeon] Document::EffectiveStoragePrincipal\n");
   nsPIDOMWindowInner* inner = GetInnerWindow();
   if (!inner) {
     return NodePrincipal();
@@ -16153,6 +16167,8 @@ nsIPrincipal* Document::EffectiveStoragePrincipal() const {
 
   // Return our cached storage principal if one exists.
   if (mActiveStoragePrincipal) {
+    PrintPrincipal(NS_LITERAL_CSTRING("mActiveStoragePrincipal"),
+                   mActiveStoragePrincipal);
     return mActiveStoragePrincipal;
   }
 
@@ -16161,8 +16177,11 @@ nsIPrincipal* Document::EffectiveStoragePrincipal() const {
   uint32_t rejectedReason = 0;
   if (ContentBlocking::ShouldAllowAccessFor(inner, GetDocumentURI(),
                                             &rejectedReason)) {
+    printf_stderr("[xeon] rejectedReason=%08x\n", rejectedReason);
+    PrintPrincipal(NS_LITERAL_CSTRING("ShouldAllowAccessFor"), NodePrincipal());
     return mActiveStoragePrincipal = NodePrincipal();
   }
+  printf_stderr("[xeon] rejectedReason=%08x\n", rejectedReason);
 
   // Let's use the storage principal only if we need to partition the cookie
   // jar. When the permission is granted, access will be different and the
@@ -16170,9 +16189,13 @@ nsIPrincipal* Document::EffectiveStoragePrincipal() const {
   if (ShouldPartitionStorage(rejectedReason) &&
       !StoragePartitioningEnabled(
           rejectedReason, const_cast<Document*>(this)->CookieJarSettings())) {
+    PrintPrincipal(NS_LITERAL_CSTRING("ShouldPartitionStorage"),
+                   NodePrincipal());
     return mActiveStoragePrincipal = NodePrincipal();
   }
 
+  PrintPrincipal(NS_LITERAL_CSTRING("mIntrinsicStoragePrincipal"),
+                 mIntrinsicStoragePrincipal);
   return mActiveStoragePrincipal = mIntrinsicStoragePrincipal;
 }
 

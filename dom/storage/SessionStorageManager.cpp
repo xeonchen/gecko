@@ -116,10 +116,16 @@ nsresult SessionStorageManager::GetSessionStorageCacheHelper(
     const nsACString& aOriginAttrs, const nsACString& aOriginKey,
     bool aMakeIfNeeded, SessionStorageCache* aCloneFrom,
     RefPtr<SessionStorageCache>* aRetVal) {
+  printf_stderr(
+      "[xeon] GetSessionStorageCacheHelper: OA=%s, key=%s, make=%d, from=%p\n",
+      PromiseFlatCString(aOriginAttrs).get(),
+      PromiseFlatCString(aOriginKey).get(), aMakeIfNeeded, aCloneFrom);
   if (OriginRecord* const originRecord = GetOriginRecord(
           aOriginAttrs, aOriginKey, aMakeIfNeeded, aCloneFrom)) {
+    printf_stderr("[xeon] cache found\n");
     *aRetVal = originRecord->mCache;
   } else {
+    printf_stderr("[xeon] cache not found\n");
     *aRetVal = nullptr;
   }
   return NS_OK;
@@ -132,6 +138,7 @@ SessionStorageManager::OriginRecord* SessionStorageManager::GetOriginRecord(
   if (!mOATable.Get(aOriginAttrs, &table)) {
     if (aMakeIfNeeded) {
       table = new OriginKeyHashTable();
+      printf_stderr("[xeon] new OriginKeyHashTable created: %p\n", table);
       mOATable.Put(aOriginAttrs, table);
     } else {
       return nullptr;
@@ -142,10 +149,13 @@ SessionStorageManager::OriginRecord* SessionStorageManager::GetOriginRecord(
   if (!table->Get(aOriginKey, &originRecord)) {
     if (aMakeIfNeeded) {
       originRecord = new OriginRecord();
+      printf_stderr("[xeon] new OriginRecord created: %p\n", originRecord);
       if (aCloneFrom) {
         originRecord->mCache = aCloneFrom->Clone();
       } else {
         originRecord->mCache = new SessionStorageCache();
+        printf_stderr("[xeon] new SessionStorageCache created: %p\n",
+                      originRecord->mCache.get());
       }
       table->Put(aOriginKey, originRecord);
     } else {
@@ -164,6 +174,7 @@ SessionStorageManager::CreateStorage(mozIDOMWindow* aWindow,
                                      bool aPrivate, Storage** aRetval) {
   RefPtr<SessionStorageCache> cache;
   nsresult rv = GetSessionStorageCache(aPrincipal, aStoragePrincipal, &cache);
+  printf_stderr("[xeon] CreateStorage cache=%p\n", cache.get());
   if (NS_FAILED(rv)) {
     return rv;
   }

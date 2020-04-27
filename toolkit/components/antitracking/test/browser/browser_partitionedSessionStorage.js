@@ -5,12 +5,17 @@ PartitionedStorageHelper.runTestInNormalAndPrivateMode(
   "Session Storage",
   async (win3rdParty, win1stParty, allowed) => {
     if (!allowed) {
+      dump(`[xeon] before setting 3rd value\n`);
       win3rdParty.sessionStorage.setItem("foo", "3rd");
+      dump(`[xeon] before setting 1st value\n`);
       win1stParty.sessionStorage.setItem("foo", "1st");
     }
 
+    dump(`[xeon] before getting value3rd\n`);
     let value3rd = win3rdParty.sessionStorage.getItem("foo");
+    dump(`[xeon] after getting value3rd: ${value3rd}\n`);
     let value1st = win1stParty.sessionStorage.getItem("foo");
+    dump(`[xeon] after getting value1st: ${value1st}\n`);
 
     is(value1st, "1st", "1st party can always acccess 1st party storage");
     if (allowed) {
