@@ -337,6 +337,8 @@ this.PartitionedStorageHelper = {
         );
       }
 
+      const isIsolated = testCategory === "sessionstorage";
+
       info("Creating data in the first tab");
       await createDataInThirdParty(browser1, "A");
 
@@ -344,10 +346,12 @@ this.PartitionedStorageHelper = {
       await createDataInThirdParty(browser2, "B");
 
       // Before writing browser4, check data written by browser1
-      info("First tab should still have just 'A'");
-      await getDataFromThirdParty(browser1, "A");
-      info("Forth tab should still have just 'A'");
-      await getDataFromThirdParty(browser4, "A");
+      if (!isIsolated) {
+        info("First tab should still have just 'A'");
+        await getDataFromThirdParty(browser1, "A");
+        info("Forth tab should still have just 'A'");
+        await getDataFromThirdParty(browser4, "A");
+      }
 
       // Ensure to create data in the forth tab before the third tab,
       // otherwise cookie will be written successfully due to prior cookie
@@ -360,7 +364,7 @@ this.PartitionedStorageHelper = {
 
       // read all tabs
       info("First tab should be changed to 'D'");
-      await getDataFromThirdParty(browser1, "D");
+      await getDataFromThirdParty(browser1, isIsolated ? "A" : "D");
 
       info("Second tab should still have just 'B'");
       await getDataFromThirdParty(browser2, "B");
