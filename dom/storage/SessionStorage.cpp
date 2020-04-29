@@ -144,7 +144,7 @@ void SessionStorage::Clear(nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv) {
 void SessionStorage::BroadcastChangeNotification(const nsAString& aKey,
                                                  const nsAString& aOldValue,
                                                  const nsAString& aNewValue) {
-  NotifyChange(this, Principal(), aKey, aOldValue, aNewValue, u"sessionStorage",
+  NotifyChange(this, StoragePrincipal(), aKey, aOldValue, aNewValue, u"sessionStorage",
                mDocumentURI, mIsPrivate, false);
 }
 

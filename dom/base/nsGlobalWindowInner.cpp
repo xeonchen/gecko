@@ -5022,7 +5022,7 @@ void nsGlobalWindowInner::ObserveStorageNotification(
     if (const RefPtr<SessionStorageManager> storageManager =
             GetBrowsingContext()->GetSessionStorageManager()) {
       nsresult rv =
-          storageManager->CheckStorage(principal, changingStorage, &check);
+          storageManager->CheckStorage(storagePrincipal, changingStorage, &check);
       if (NS_FAILED(rv)) {
         return;
       }

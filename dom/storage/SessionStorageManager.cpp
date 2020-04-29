@@ -248,7 +248,7 @@ SessionStorageManager::CheckStorage(nsIPrincipal* aPrincipal, Storage* aStorage,
     return NS_OK;
   }
 
-  if (!StorageUtils::PrincipalsEqual(aStorage->Principal(), aPrincipal)) {
+  if (!StorageUtils::PrincipalsEqual(aStorage->StoragePrincipal(), aPrincipal)) {
     return NS_OK;
   }
 
