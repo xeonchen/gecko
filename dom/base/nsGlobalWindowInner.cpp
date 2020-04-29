@@ -4982,6 +4982,7 @@ nsresult nsGlobalWindowInner::Observe(nsISupports* aSubject, const char* aTopic,
 
 void nsGlobalWindowInner::ObserveStorageNotification(
     StorageEvent* aEvent, const char16_t* aStorageType, bool aPrivateBrowsing) {
+  printf_stderr("[xeon] ObserveStorageNotification: %p %p\n", this, aEvent);
   MOZ_ASSERT(aEvent);
 
   // The private browsing check must be done here again because this window
@@ -5028,7 +5029,7 @@ void nsGlobalWindowInner::ObserveStorageNotification(
       }
     }
 
-    if (!check) {
+    if (NS_WARN_IF(!check)) {
       // This storage event is not coming from our storage or is coming
       // from a different docshell, i.e. it is a clone, ignore this event.
       return;

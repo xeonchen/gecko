@@ -10,6 +10,7 @@ var gotEvent = false;
 
 window.addEventListener("storage", function(event)
 {
+  dump(`[xeon][frameLocalStorageSlaveNotEqual] storage event: k=${event.key} v=${event.newValue}\n`);
   gotEvent = true;
 });
 

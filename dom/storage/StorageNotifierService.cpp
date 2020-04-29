@@ -60,7 +60,9 @@ void StorageNotifierService::Broadcast(StorageEvent* aEvent,
   nsTObserverArray<RefPtr<StorageNotificationObserver>>::ForwardIterator iter(
       service->mObservers);
 
+  int counter = 0;
   while (iter.HasMore()) {
+    printf_stderr("[xeon] Broadcast(%d)\n", ++counter);
     RefPtr<StorageNotificationObserver> observer = iter.GetNext();
 
     // Enforce that the source storage area's private browsing state matches
@@ -83,6 +85,7 @@ void StorageNotifierService::Broadcast(StorageEvent* aEvent,
     RefPtr<Runnable> r = NS_NewRunnableFunction(
         "StorageNotifierService::Broadcast",
         [observer, event, aStorageType, aPrivateBrowsing]() {
+          printf_stderr("[xeon] ObserveStorageNotification: %p\n", event.get());
           observer->ObserveStorageNotification(event, aStorageType,
                                                aPrivateBrowsing);
         });

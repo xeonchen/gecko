@@ -10,6 +10,7 @@ var gotEvent = false;
 
 window.addEventListener("storage", function(event)
 {
+  dump(`[xeon][frameSessionStorageMasterEqual] storage event: k=${event.key} v=${event.newValue}\n`);
   gotEvent = true;
 });
 
@@ -19,10 +20,13 @@ function doStep()
   {
     // In step 2 we instantiate sessionStorage in the other frame
     case 1:
+      dump(`[xeon][sessionstorage][me] case 1\n`);
       // Must not fire (storage must be clear!)
       sessionStorage.clear();
       // Must fire X:null->'1'
+      dump(`[xeon][sessionstorage][me] set 1\n`);
       sessionStorage.setItem("X", "1");
+      dump(`[xeon][sessionstorage][me] set 1 done\n`);
       // Must fire X:'1'->'2'
       sessionStorage.setItem("X", "2");
       // Must not fire

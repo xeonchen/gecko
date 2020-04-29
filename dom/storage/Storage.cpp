@@ -123,6 +123,7 @@ void Storage::NotifyChange(Storage* aStorage, nsIPrincipal* aPrincipal,
       StorageEvent::Constructor(nullptr, NS_LITERAL_STRING("storage"), dict);
 
   event->SetPrincipal(aPrincipal);
+  printf_stderr("[xeon] NotifyChange: event=%p\n", event.get());
 
   // This will send the event to any registered window.
   StorageNotifierService::Broadcast(event, aStorageType, aIsPrivate,

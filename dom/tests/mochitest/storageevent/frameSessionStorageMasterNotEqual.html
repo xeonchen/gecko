@@ -10,6 +10,7 @@ var gotEvent = false;
 
 window.addEventListener("storage", function(event)
 {
+  dump(`[xeon][frameSessionStorageMasterNotEqual] storage event: k=${event.key} v=${event.newValue}\n`);
   gotEvent = true;
 });
 
@@ -18,6 +19,7 @@ function doStep()
   switch (currentStep)
   {
     case 1:
+      dump(`[xeon][sessionstorage][mne] case 1\n`);
       // Must not fire (storage must be clear!)
       sessionStorage.clear();
       // Must fire X:null->'1'

@@ -4,6 +4,7 @@ let parentLocation = "";
 // should be passed in. This will be used as the target origin argument
 // for the postMessage call for all subsequent calls to postMsg().
 function postMsg(message, newParentLocation) {
+  dump(`[xeon] postMsg(${message}, ${newParentLocation})\n`);
   if (newParentLocation) {
     parentLocation = newParentLocation;
   } else if (parentLocation == "") {
@@ -14,6 +15,10 @@ function postMsg(message, newParentLocation) {
 }
 
 window.addEventListener("message", onMessageReceived);
+window.addEventListener("storage", function (event) {
+  dump(`[xeon][interOriginFrame] storage event: k=${event.key} v=${event.newValue}\n`);
+});
+
 
 function onMessageReceived(event) {
   if (event.data == "step") {

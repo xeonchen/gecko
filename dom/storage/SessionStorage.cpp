@@ -144,6 +144,10 @@ void SessionStorage::Clear(nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv) {
 void SessionStorage::BroadcastChangeNotification(const nsAString& aKey,
                                                  const nsAString& aOldValue,
                                                  const nsAString& aNewValue) {
+  printf_stderr("[xeon] SessionStorage::BroadcastChangeNotification: key=%s, old=%s, new=%s\n",
+                NS_ConvertUTF16toUTF8(aKey).get(),
+                NS_ConvertUTF16toUTF8(aOldValue).get(),
+                NS_ConvertUTF16toUTF8(aNewValue).get());
   NotifyChange(this, StoragePrincipal(), aKey, aOldValue, aNewValue, u"sessionStorage",
                mDocumentURI, mIsPrivate, false);
 }

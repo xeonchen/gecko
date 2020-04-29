@@ -11,6 +11,7 @@ var events = [];
 
 window.addEventListener("storage", function(event)
 {
+  dump(`[xeon][frameSessionStorageSlaveEqual] storage event: k=${event.key} v=${event.newValue}\n`);
   events.push(event);
 });
 
@@ -33,7 +34,7 @@ function doStep()
   switch (currentStep)
   {
     case 10:
-      is(events.length, 5, "Expected 5 events");
+      is(events.length, 5, "Expected 5 events (session)");
       checkEvent("X", null, "1");
       checkEvent("X", "1", "2");
       checkEvent("X", "2", null);
