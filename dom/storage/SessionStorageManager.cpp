@@ -122,6 +122,9 @@ nsresult SessionStorageManager::GetSessionStorageCacheHelper(
   } else {
     *aRetVal = nullptr;
   }
+  printf_stderr("[xeon] GetSessionStorageCacheHelper (%s) (%s) %p\n",
+                PromiseFlatCString(aOriginAttrs).get(),
+                PromiseFlatCString(aOriginKey).get(), aRetVal->get());
   return NS_OK;
 }
 

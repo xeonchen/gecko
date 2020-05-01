@@ -15,6 +15,8 @@ SessionStorageCache::SessionStorageCache() = default;
 
 SessionStorageCache::DataSet* SessionStorageCache::Set(
     DataSetType aDataSetType) {
+  // printf_stderr("[xeon] Cache=%p, SessionStorageCacheType=%d\n", this,
+  //               aDataSetType);
   if (aDataSetType == eDefaultSetType) {
     return &mDefaultSet;
   }
@@ -29,6 +31,8 @@ int64_t SessionStorageCache::GetOriginQuotaUsage(DataSetType aDataSetType) {
 }
 
 uint32_t SessionStorageCache::Length(DataSetType aDataSetType) {
+  // printf_stderr("[xeon] Cache=%p, mKeys=%p\n", this,
+  //               &(Set(aDataSetType)->mKeys));
   return Set(aDataSetType)->mKeys.Count();
 }
 

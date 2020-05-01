@@ -605,6 +605,8 @@ nsTArray<InputFormData> ContentSessionStore::GetInputs(
   return inputs;
 }
 
+void PrintPrincipal(const char* aPrefix, nsIPrincipal* aPrincipal);
+
 bool ContentSessionStore::AppendSessionStorageChange(StorageEvent* aEvent) {
   // We will collect the full SessionStore if mStorageStatus is FULLSTORAGE.
   // These partial changes can be skipped in this case.
@@ -621,6 +623,7 @@ bool ContentSessionStore::AppendSessionStorageChange(StorageEvent* aEvent) {
   if (!storagePrincipal) {
     return false;
   }
+  PrintPrincipal("AppendSessionStorageChange:S", storagePrincipal);
 
   nsAutoCString origin;
   nsresult rv = storagePrincipal->GetOrigin(origin);
@@ -778,6 +781,7 @@ bool TabListener::UpdateSessionStore(uint32_t aFlushId, bool aIsFinal) {
   bool ok = ToJSValue(jsapi.cx(), data, &dataVal);
   NS_ENSURE_TRUE(ok, false);
 
+  printf_stderr("[xeon] funcs->UpdateSessionStore %p\n", this);
   nsresult rv = funcs->UpdateSessionStore(
       mOwnerContent, aFlushId, aIsFinal, mEpoch, dataVal,
       mSessionStore->GetAndClearSHistoryChanged());

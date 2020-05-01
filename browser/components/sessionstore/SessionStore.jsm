@@ -3133,6 +3133,7 @@ var SessionStoreInternal = {
 
     // Collect state before flushing.
     let tabState = TabState.collect(aTab, TAB_CUSTOM_VALUES.get(aTab));
+    dump(`[xeon] tabState=${JSON.stringify(tabState)}\n`);
 
     // Flush to get the latest tab state to duplicate.
     let browser = aTab.linkedBrowser;
@@ -3154,6 +3155,7 @@ var SessionStoreInternal = {
       // only have access to the <xul:browser>.
       let options = { includePrivateData: true };
       TabState.copyFromCache(browser, tabState, options);
+      dump(`[xeon] copyFromCache options=${JSON.stringify(options)}\n`);
 
       tabState.index += aDelta;
       tabState.index = Math.max(
@@ -4618,6 +4620,7 @@ var SessionStoreInternal = {
 
   // Restores the given tab state for a given tab.
   restoreTab(tab, tabData, options = {}) {
+    dump(`[xeon] restoreTab: tabData=${JSON.stringify(tabData)}\n`);
     let browser = tab.linkedBrowser;
 
     if (TAB_STATE_FOR_BROWSER.has(browser)) {
@@ -5925,10 +5928,7 @@ var SessionStoreInternal = {
     );
     // Ensure that the timer is both canceled once we are done with it
     // and not garbage-collected until then.
-    deferred.promise.then(
-      () => timer.cancel(),
-      () => timer.cancel()
-    );
+    deferred.promise.then(() => timer.cancel(), () => timer.cancel());
     return deferred;
   },
 
@@ -5952,6 +5952,9 @@ var SessionStoreInternal = {
           let { frameLoader } = browser;
           if (frameLoader.remoteTab) {
             let attrs = browser.contentPrincipal.originAttributes;
+            dump(
+              `[xeon] _sendRestoreHistory: attrs=${JSON.stringify(attrs)}\n`
+            );
             let dataPrincipal = Services.scriptSecurityManager.createContentPrincipalFromOrigin(
               origin
             );

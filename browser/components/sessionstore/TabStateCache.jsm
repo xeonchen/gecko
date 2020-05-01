@@ -150,6 +150,9 @@ var TabStateCacheInternal = {
    */
   update(browserOrTab, newData) {
     let data = this._data.get(browserOrTab.permanentKey) || {};
+    dump(`[xeon] TabStateCache.update:\n`);
+    dump(`[xeon]   old:${JSON.stringify(data.storage)}\n`);
+    dump(`[xeon]   new:${JSON.stringify(newData.storagechange)}\n`);
 
     for (let key of Object.keys(newData)) {
       if (key == "storagechange") {
@@ -170,6 +173,7 @@ var TabStateCacheInternal = {
       }
     }
 
+    dump(`[xeon]   merged:${JSON.stringify(data.storage)}\n`);
     this._data.set(browserOrTab.permanentKey, data);
   },
 };

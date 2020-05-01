@@ -358,6 +358,11 @@ var SessionStoreFuncInternal = {
   },
 
   updateStorage: function SSF_updateStorage(aOrigins, aKeys, aValues) {
+    dump(
+      `[xeon] updateStorage(${JSON.stringify(aOrigins)}, ${JSON.stringify(
+        aKeys
+      )}, ${JSON.stringify(aValues)})\n`
+    );
     let data = {};
     for (let i = 0; i < aOrigins.length; i++) {
       // If the key isn't defined, then .clear() was called, and we send
@@ -438,6 +443,7 @@ var SessionStoreFuncInternal = {
       }
     }
 
+    dump(`[xeon] currentData=${JSON.stringify(currentData)}\n`);
     SessionStore.updateSessionStoreFromTablistener(aBrowser, {
       data: currentData,
       flushID: aFlushId,

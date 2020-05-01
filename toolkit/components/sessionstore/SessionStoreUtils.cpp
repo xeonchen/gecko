@@ -1077,6 +1077,18 @@ bool SessionStoreUtils::RestoreFormData(const GlobalObject& aGlobal,
   return true;
 }
 
+void PrintPrincipal(const char* aPrefix, nsIPrincipal* aPrincipal) {
+  if (!aPrincipal) {
+    printf_stderr("[xeon][%s] (null)\n", aPrefix);
+    return;
+  }
+  nsAutoCString originNoSuffix, originSuffix;
+  aPrincipal->GetOriginNoSuffix(originNoSuffix);
+  aPrincipal->GetOriginSuffix(originSuffix);
+  printf_stderr("[xeon][%s] %s%s\n", aPrefix, originNoSuffix.get(),
+                originSuffix.get());
+}
+
 /* Read entries in the session storage data contained in a tab's history. */
 static void ReadAllEntriesFromStorage(nsPIDOMWindowOuter* aWindow,
                                       nsTArray<nsCString>& aOrigins,
@@ -1108,6 +1120,11 @@ static void ReadAllEntriesFromStorage(nsPIDOMWindowOuter* aWindow,
     // Don't read a host twice.
     return;
   }
+
+  printf_stderr("[xeon] ReadAllEntriesFromStorage: window=%p origin=%s\n",
+                aWindow->GetCurrentInnerWindow(), origin.get());
+  PrintPrincipal("ReadAllEntriesFromStorage:P", principal);
+  PrintPrincipal("ReadAllEntriesFromStorage:S", storagePrincipal);
 
   /* Completed checking for recursion and is about to read storage*/
   const RefPtr<SessionStorageManager> storageManager =
@@ -1144,6 +1161,9 @@ static void ReadAllEntriesFromStorage(nsPIDOMWindowOuter* aWindow,
       continue;
     }
 
+    printf_stderr("[xeon] ReadAllEntriesFromStorage: key=%s, value=%s\n",
+                  NS_ConvertUTF16toUTF8(key).get(),
+                  NS_ConvertUTF16toUTF8(value).get());
     aKeys.AppendElement(key);
     aValues.AppendElement(value);
     aOrigins.AppendElement(origin);
@@ -1191,7 +1211,11 @@ void SessionStoreUtils::CollectedSessionStorage(
 void SessionStoreUtils::RestoreSessionStorage(
     const GlobalObject& aGlobal, nsIDocShell* aDocShell,
     const Record<nsString, Record<nsString, nsString>>& aData) {
+  printf_stderr("[xeon] RestoreSessionStorage\n");
+
   for (auto& entry : aData.Entries()) {
+    printf_stderr("[xeon] aData: %s\n",
+                  NS_ConvertUTF16toUTF8(entry.mKey).get());
     // NOTE: In capture() we record the full origin for the URI which the
     // sessionStorage is being captured for. As of bug 1235657 this code
     // stopped parsing any origins which have originattributes correctly, as
@@ -1222,6 +1246,9 @@ void SessionStoreUtils::RestoreSessionStorage(
         BasePrincipal::CreateContentPrincipal(
             NS_ConvertUTF16toUTF8(entry.mKey));
 
+    PrintPrincipal("RestoreSessionStorage:P", principal);
+    PrintPrincipal("RestoreSessionStorage:S", storagePrincipal);
+
     const RefPtr<SessionStorageManager> storageManager =
         browsingContext->GetSessionStorageManager();
     if (!storageManager) {
@@ -1240,7 +1267,11 @@ void SessionStoreUtils::RestoreSessionStorage(
     if (!storage) {
       continue;
     }
+    printf_stderr("[xeon] bData\n");
     for (auto& InnerEntry : entry.mValue.Entries()) {
+      printf_stderr("[xeon] InnerEntry key=%s, value=%s\n",
+                    NS_ConvertUTF16toUTF8(InnerEntry.mKey).get(),
+                    NS_ConvertUTF16toUTF8(InnerEntry.mValue).get());
       IgnoredErrorResult result;
       storage->SetItem(InnerEntry.mKey, InnerEntry.mValue, *principal, result);
       if (result.Failed()) {

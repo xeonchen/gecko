@@ -51,12 +51,18 @@ int64_t SessionStorage::GetOriginQuotaUsage() const {
 
 uint32_t SessionStorage::GetLength(nsIPrincipal& aSubjectPrincipal,
                                    ErrorResult& aRv) {
-  if (!CanUseStorage(aSubjectPrincipal)) {
+  if (NS_WARN_IF(!CanUseStorage(aSubjectPrincipal))) {
     aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
     return 0;
   }
 
-  return mCache->Length(DATASET);
+  uint32_t length = mCache->Length(DATASET);
+  nsAutoCString origin;
+  aSubjectPrincipal.GetOrigin(origin);
+  printf_stderr("[xeon] GetLength(%s, %p, %d) %08x\n", origin.get(),
+                mCache.get(), DATASET, length);
+
+  return length;
 }
 
 void SessionStorage::Key(uint32_t aIndex, nsAString& aResult,
@@ -93,7 +99,12 @@ void SessionStorage::GetSupportedNames(nsTArray<nsString>& aKeys) {
 void SessionStorage::SetItem(const nsAString& aKey, const nsAString& aValue,
                              nsIPrincipal& aSubjectPrincipal,
                              ErrorResult& aRv) {
-  if (!CanUseStorage(aSubjectPrincipal)) {
+  nsAutoCString origin;
+  aSubjectPrincipal.GetOrigin(origin);
+  printf_stderr("[xeon] SetItem(%s, %p, %d) k=%s, v=%s\n", origin.get(),
+                mCache.get(), DATASET, NS_ConvertUTF16toUTF8(aKey).get(),
+                NS_ConvertUTF16toUTF8(aValue).get());
+  if (NS_WARN_IF(!CanUseStorage(aSubjectPrincipal))) {
     aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
     return;
   }
@@ -105,6 +116,8 @@ void SessionStorage::SetItem(const nsAString& aKey, const nsAString& aValue,
     return;
   }
 
+  GetLength(aSubjectPrincipal, aRv);
+
   if (rv == NS_SUCCESS_DOM_NO_OPERATION) {
     return;
   }
@@ -115,10 +128,15 @@ void SessionStorage::SetItem(const nsAString& aKey, const nsAString& aValue,
 void SessionStorage::RemoveItem(const nsAString& aKey,
                                 nsIPrincipal& aSubjectPrincipal,
                                 ErrorResult& aRv) {
-  if (!CanUseStorage(aSubjectPrincipal)) {
+  if (NS_WARN_IF(!CanUseStorage(aSubjectPrincipal))) {
     aRv.Throw(NS_ERROR_DOM_SECURITY_ERR);
     return;
   }
+
+  nsAutoCString origin;
+  aSubjectPrincipal.GetOrigin(origin);
+  printf_stderr("[xeon] RemoveItem(%s, %p) %s\n", origin.get(), mCache.get(),
+                NS_ConvertUTF16toUTF8(aKey).get());
 
   nsString oldValue;
   nsresult rv = mCache->RemoveItem(DATASET, aKey, oldValue);
@@ -133,6 +151,12 @@ void SessionStorage::RemoveItem(const nsAString& aKey,
 
 void SessionStorage::Clear(nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv) {
   uint32_t length = GetLength(aSubjectPrincipal, aRv);
+
+  nsAutoCString origin;
+  aSubjectPrincipal.GetOrigin(origin);
+  printf_stderr("[xeon] Clear(%s, %p) %08x\n", origin.get(), mCache.get(),
+                length);
+
   if (!length) {
     return;
   }

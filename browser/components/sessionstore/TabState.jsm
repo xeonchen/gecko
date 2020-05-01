@@ -166,6 +166,7 @@ var TabStateInternal = {
     if (!data) {
       return;
     }
+    dump(`[xeon] copyFromCache\n`);
 
     // The caller may explicitly request to omit privacy checks.
     let includePrivateData = options && options.includePrivateData;
@@ -177,6 +178,7 @@ var TabStateInternal = {
       if (!includePrivateData) {
         if (key === "storage") {
           value = PrivacyFilter.filterSessionStorageData(value);
+          dump(`[xeon] filterSessionStorageData: ${JSON.stringify(value)}\n`);
         } else if (key === "formdata") {
           value = PrivacyFilter.filterFormData(value);
         }

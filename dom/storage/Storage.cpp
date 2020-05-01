@@ -42,9 +42,11 @@ Storage::Storage(nsPIDOMWindowInner* aWindow, nsIPrincipal* aPrincipal,
   } else if (mWindow) {
     uint32_t rejectedReason = 0;
     StorageAccess access = StorageAllowedForWindow(mWindow, &rejectedReason);
-
+    printf_stderr("[xeon] Storage() access=%d, reason=%08x\n", access,
+                  rejectedReason);
     mIsSessionOnly = access <= StorageAccess::eSessionScoped;
   }
+  printf_stderr("[xeon] Storage() mIsSessionOnly=%d\n", mIsSessionOnly);
 }
 
 Storage::~Storage() = default;

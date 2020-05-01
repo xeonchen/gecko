@@ -37,6 +37,7 @@ add_task(async function session_storage() {
   await TabStateFlusher.flush(browser);
 
   let { storage } = JSON.parse(ss.getTabState(tab));
+  dump(`[xeon] 1. storage=${JSON.stringify(storage)}\n`);
   is(
     storage[INNER_ORIGIN].test,
     INNER_VALUE,
@@ -53,6 +54,7 @@ add_task(async function session_storage() {
   await TabStateFlusher.flush(browser);
 
   ({ storage } = JSON.parse(ss.getTabState(tab)));
+  dump(`[xeon] 2. storage=${JSON.stringify(storage)}\n`);
   is(
     storage[INNER_ORIGIN].test,
     "modified1",
@@ -70,6 +72,7 @@ add_task(async function session_storage() {
   await TabStateFlusher.flush(browser);
 
   ({ storage } = JSON.parse(ss.getTabState(tab)));
+  dump(`[xeon] 3. storage=${JSON.stringify(storage)}\n`);
   is(
     storage[INNER_ORIGIN].test,
     "modified2",
@@ -81,15 +84,21 @@ add_task(async function session_storage() {
     "sessionStorage data for mochi.test has been serialized correctly"
   );
 
+  dump(`[xeon] 3.0\n`);
   // Test that duplicating a tab works.
   let tab2 = gBrowser.duplicateTab(tab);
+  dump(`[xeon] 3.1\n`);
   let browser2 = tab2.linkedBrowser;
+  dump(`[xeon] 3.2\n`);
   await promiseTabRestored(tab2);
+  dump(`[xeon] 3.3\n`);
 
   // Flush to make sure chrome received all data.
   await TabStateFlusher.flush(browser2);
+  dump(`[xeon] 3.4\n`);
 
   ({ storage } = JSON.parse(ss.getTabState(tab2)));
+  dump(`[xeon] 4. storage=${JSON.stringify(storage)}\n`);
   // TODO: bug 1634734
   todo_is(
     storage[INNER_ORIGIN].test,
@@ -108,6 +117,7 @@ add_task(async function session_storage() {
   await TabStateFlusher.flush(browser2);
 
   ({ storage } = JSON.parse(ss.getTabState(tab2)));
+  dump(`[xeon] 5. storage=${JSON.stringify(storage)}\n`);
   // TODO: bug 1634734
   todo_is(
     storage[INNER_ORIGIN].test,

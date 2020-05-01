@@ -4368,6 +4368,18 @@ already_AddRefed<nsICSSDeclaration> nsGlobalWindowInner::GetComputedStyleHelper(
                             nullptr);
 }
 
+static void PrintPrincipal(const char* aPrefix, nsIPrincipal* aPrincipal) {
+  if (!aPrincipal) {
+    printf_stderr("[xeon][%s] (null)\n", aPrefix);
+    return;
+  }
+  nsAutoCString originNoSuffix, originSuffix;
+  aPrincipal->GetOriginNoSuffix(originNoSuffix);
+  aPrincipal->GetOriginSuffix(originSuffix);
+  printf_stderr("[xeon][%s] %s%s\n", aPrefix, originNoSuffix.get(),
+                originSuffix.get());
+}
+
 Storage* nsGlobalWindowInner::GetSessionStorage(ErrorResult& aError) {
   nsIPrincipal* principal = GetPrincipal();
   nsIPrincipal* storagePrincipal = IntrinsicStoragePrincipal();
@@ -4377,6 +4389,9 @@ Storage* nsGlobalWindowInner::GetSessionStorage(ErrorResult& aError) {
       !Storage::StoragePrefIsEnabled()) {
     return nullptr;
   }
+
+  PrintPrincipal("GetSessionStorage:P", principal);
+  PrintPrincipal("GetSessionStorage:S", storagePrincipal);
 
   if (mSessionStorage) {
     MOZ_LOG(gDOMLeakPRLogInner, LogLevel::Debug,
