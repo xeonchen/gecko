@@ -130,8 +130,23 @@ ExtensionPreferencesManager.addSetting("websites.cookieConfig", {
   prefNames: ["network.cookie.cookieBehavior", "network.cookie.lifetimePolicy"],
 
   setCallback(value) {
+    const cookieBehavior = cookieBehaviorValues.get(value.behavior);
+
+    // Intensionally use Preferences.get("network.cookie.cookieBehavior") here
+    // to read the "real" preference value.
+    const needUpdate =
+      cookieBehavior !== Preferences.get("network.cookie.cookieBehavior");
+    if (
+      needUpdate &&
+      Preferences.get("privacy.firstparty.isolate") &&
+      cookieBehavior === cookieSvc.BEHAVIOR_REJECT_TRACKER_AND_PARTITION_FOREIGN
+    ) {
+      throw new ExtensionError(
+        `Invalid cookie behavior '${value.behavior}' when first-party isolation is enabled`
+      );
+    }
     return {
-      "network.cookie.cookieBehavior": cookieBehaviorValues.get(value.behavior),
+      "network.cookie.cookieBehavior": cookieBehavior,
       "network.cookie.lifetimePolicy": value.nonPersistentCookies
         ? cookieSvc.ACCEPT_SESSION
         : cookieSvc.ACCEPT_NORMALLY,
@@ -359,7 +374,7 @@ this.privacy = class extends ExtensionAPI {
             context,
             name: "websites.cookieConfig",
             callback() {
-              let prefValue = Preferences.get("network.cookie.cookieBehavior");
+              let prefValue = Services.cookies.cookieBehavior;
               return {
                 behavior: Array.from(cookieBehaviorValues.entries()).find(
                   entry => entry[1] === prefValue

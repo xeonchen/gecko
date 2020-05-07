@@ -308,7 +308,7 @@ add_task(async function test_privacy_other_prefs() {
       "privacy.resistFingerprinting": true,
     },
     "websites.firstPartyIsolate": {
-      "privacy.firstparty.isolate": true,
+      "privacy.firstparty.isolate": false,
     },
     "websites.cookieConfig": {
       "network.cookie.cookieBehavior": cookieSvc.BEHAVIOR_ACCEPT,
@@ -366,6 +366,10 @@ add_task(async function test_privacy_other_prefs() {
           settingData = await apiObj.get({});
           browser.test.sendMessage("settingData", settingData);
           break;
+        case "get":
+          settingData = await apiObj.get({});
+          browser.test.sendMessage("gettingData", settingData);
+          break;
       }
     });
   }
@@ -419,6 +423,23 @@ add_task(async function test_privacy_other_prefs() {
     extension.sendMessage("set", { value: value }, setting);
     let data = await extension.awaitMessage("settingThrowsException");
     equal(data.message, expected);
+  }
+
+  async function testGetting(getting, expected, expectedValue) {
+    extension.sendMessage("get", null, getting);
+    let data = await extension.awaitMessage("gettingData");
+    deepEqual(
+      data.value,
+      expectedValue,
+      `Got expected result on getting ${getting}`
+    );
+    for (let pref in expected) {
+      equal(
+        Preferences.get(pref),
+        expected[pref],
+        `${pref} get correctly for ${expected[pref]}`
+      );
+    }
   }
 
   await testSetting(
@@ -483,13 +504,6 @@ add_task(async function test_privacy_other_prefs() {
   });
   await testSetting("websites.resistFingerprinting", true, {
     "privacy.resistFingerprinting": true,
-  });
-
-  await testSetting("websites.firstPartyIsolate", false, {
-    "privacy.firstparty.isolate": false,
-  });
-  await testSetting("websites.firstPartyIsolate", true, {
-    "privacy.firstparty.isolate": true,
   });
 
   await testSetting("websites.trackingProtectionMode", "always", {
@@ -607,6 +621,66 @@ add_task(async function test_privacy_other_prefs() {
       nonPersistentCookies: false,
     }
   );
+
+  // 0. Begin of first-party isolation
+  await testSetting("websites.firstPartyIsolate", true, {
+    "privacy.firstparty.isolate": true,
+  });
+
+  // 1. When FPI is enabled, reject_trackers_and_partition_foreign will become
+  // reject_trackers, but network.cookie.cookieBehavior stays the same.
+  await testGetting(
+    "websites.cookieConfig",
+    {
+      "network.cookie.cookieBehavior":
+        cookieSvc.BEHAVIOR_REJECT_TRACKER_AND_PARTITION_FOREIGN,
+      "network.cookie.lifetimePolicy": cookieSvc.ACCEPT_NORMALLY,
+    },
+    {
+      behavior: "reject_trackers",
+      nonPersistentCookies: false,
+    }
+  );
+
+  // 2. Setting reject_trackers_and_partition_foreign should be fine if
+  // network.cookie.cookieBehavior is not changed, but return value is still
+  // reject_trackers
+  await testSetting(
+    "websites.cookieConfig",
+    { behavior: "reject_trackers_and_partition_foreign" },
+    {
+      "network.cookie.cookieBehavior":
+        cookieSvc.BEHAVIOR_REJECT_TRACKER_AND_PARTITION_FOREIGN,
+      "network.cookie.lifetimePolicy": cookieSvc.ACCEPT_NORMALLY,
+    },
+    {
+      behavior: "reject_trackers",
+      nonPersistentCookies: false,
+    }
+  );
+
+  // 3. Change cookieConfig to reject_trackers should work normally.
+  await testSetting(
+    "websites.cookieConfig",
+    { behavior: "reject_trackers" },
+    {
+      "network.cookie.cookieBehavior": cookieSvc.BEHAVIOR_REJECT_TRACKER,
+      "network.cookie.lifetimePolicy": cookieSvc.ACCEPT_NORMALLY,
+    },
+    { behavior: "reject_trackers", nonPersistentCookies: false }
+  );
+
+  // 4. When FPI is enabled, change setting to
+  //  reject_trackers_and_partition_foreign is invalid
+  await testSettingException(
+    "websites.cookieConfig",
+    { behavior: "reject_trackers_and_partition_foreign" },
+    "Invalid cookie behavior 'reject_trackers_and_partition_foreign' when first-party isolation is enabled"
+  );
+
+  await testSetting("websites.firstPartyIsolate", false, {
+    "privacy.firstparty.isolate": false,
+  });
 
   await testSetting(
     "network.tlsVersionRestriction",
