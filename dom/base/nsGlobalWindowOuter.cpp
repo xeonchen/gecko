@@ -2048,6 +2048,23 @@ nsresult nsGlobalWindowOuter::SetNewDocument(Document* aDocument,
              "mDocumentPartitionedPrincipal prematurely set!");
   MOZ_ASSERT(aDocument);
 
+  do {
+    if (!IsTopLevelWindow()) {
+      break;
+    }
+    nsCOMPtr<nsIURI> uri = aDocument->GetDocumentURI();
+    nsAutoCString scheme;
+    if (NS_FAILED(uri->GetScheme(scheme)) ||
+        (!scheme.EqualsLiteral("http") && !scheme.EqualsLiteral("https"))) {
+      break;
+    }
+
+    printf_stderr("[xeon] SetNewDocument(%u)\n", getpid());
+    printf_stderr("[xeon] spec=%s\n", uri->GetSpecOrDefault().get());
+    nsAutoCString baseDomain(aDocument->GetBaseDomain());
+    printf_stderr("[xeon] baseDomain=%s\n", baseDomain.get());
+  } while (false);
+
   // Bail out early if we're in process of closing down the window.
   NS_ENSURE_STATE(!mCleanedUp);
 

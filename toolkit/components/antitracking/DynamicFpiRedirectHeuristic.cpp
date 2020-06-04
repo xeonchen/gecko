@@ -40,7 +40,7 @@ nsresult GetBaseDomain(nsIURI* aURI, nsACString& aBaseDomain) {
 
 // check if there's any interacting visit within the given seconds
 bool HasEligibleVisit(
-    nsIURI* aURI,
+    nsIChannel* aChannel, nsIURI* aURI,
     int64_t aSinceInSec = StaticPrefs::
         privacy_restrict3rdpartystorage_heuristic_recently_visited_time()) {
   nsresult rv;
@@ -196,6 +196,11 @@ void DynamicFpiRedirectHeuristic(nsIChannel* aOldChannel, nsIURI* aOldURI,
 
   nsresult rv;
 
+  // This heuristic works only on the parent process.
+  if (!XRE_IsParentProcess()) {
+    return;
+  }
+
   if (!StaticPrefs::
           privacy_restrict3rdpartystorage_heuristic_recently_visited()) {
     return;
@@ -307,7 +312,8 @@ void DynamicFpiRedirectHeuristic(nsIChannel* aOldChannel, nsIURI* aOldURI,
     return;
   }
 
-  if (!HasEligibleVisit(aOldURI) || !HasEligibleVisit(aNewURI)) {
+  if (!HasEligibleVisit(aOldChannel, aOldURI) ||
+      !HasEligibleVisit(aNewChannel, aNewURI)) {
     LOG(("No previous visit record, bailing out early."));
     return;
   }
