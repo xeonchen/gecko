@@ -27,6 +27,29 @@ namespace mozilla {
 
 namespace {
 
+void Test(nsIChannel* aChannel) {
+  // MOZ_ASSERT(XRE_IsParentProcess());
+
+  // printf_stderr("[xeon] CanonicalBrowsingContext\n");
+
+  // nsCOMPtr<nsILoadInfo> loadInfo = aChannel->LoadInfo();
+  // MOZ_ASSERT(loadInfo);
+  // RefPtr<dom::BrowsingContext> bc;
+  // loadInfo->GetBrowsingContext(getter_AddRefs(bc));
+  // MOZ_ASSERT(bc);
+  // RefPtr<CanonicalBrowsingContext> cbc = CanonicalBrowsingContext::Cast(bc);
+  // MOZ_ASSERT(cbc);
+
+  // nsCOMPtr<nsISHistory> sessionHistory = cbc->GetSessionHistory();
+
+  // int32_t count;
+  // sessionHistory->GetCount(&count);
+  // for (auto i = 0; i < count; ++i) {
+  //   nsCOMPtr<nsISHEntry> entry;
+  //   sessionHistory->GetEntryAtIndex(getter_AddRefs(entry));
+}
+}  // namespace
+
 nsresult GetBaseDomain(nsIURI* aURI, nsACString& aBaseDomain) {
   nsCOMPtr<nsIEffectiveTLDService> tldService =
       do_GetService(NS_EFFECTIVETLDSERVICE_CONTRACTID);
@@ -44,6 +67,8 @@ bool HasEligibleVisit(
     int64_t aSinceInSec = StaticPrefs::
         privacy_restrict3rdpartystorage_heuristic_recently_visited_time()) {
   nsresult rv;
+
+  Test(aChannel);
 
   nsAutoCString baseDomain;
   rv = GetBaseDomain(aURI, baseDomain);
@@ -185,7 +210,7 @@ bool ShouldRedirectHeuristicApplyTrackingResource(nsIChannel* aOldChannel,
   return true;
 }
 
-}  // namespace
+}  // namespace mozilla
 
 void DynamicFpiRedirectHeuristic(nsIChannel* aOldChannel, nsIURI* aOldURI,
                                  nsIChannel* aNewChannel, nsIURI* aNewURI) {
