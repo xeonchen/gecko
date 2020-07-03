@@ -1105,10 +1105,8 @@ bool gfxUserFontSet::UserFontCache::Entry::KeyEquals(
       return false;
     }
   }
-
-  if (mPrivate != aKey->mPrivate) {
-    return false;
-  }
+  MOZ_DIAGNOSTIC_ASSERT(mPrivate == aKey->mPrivate,
+                        "private mode should be checked by principal");
 
   if (mFontEntry->SlantStyle() != fe->SlantStyle() ||
       mFontEntry->Weight() != fe->Weight() ||

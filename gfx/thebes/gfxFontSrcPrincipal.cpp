@@ -8,6 +8,7 @@
 #include "nsProxyRelease.h"
 #include "nsURIHashKey.h"
 #include "mozilla/BasePrincipal.h"
+#include "mozilla/HashFunctions.h"
 
 using mozilla::BasePrincipal;
 
@@ -17,7 +18,11 @@ gfxFontSrcPrincipal::gfxFontSrcPrincipal(nsIPrincipal* aPrincipal) {
 
   mPrincipal = aPrincipal;
 
-  mHash = mPrincipal->GetHashValue();
+  nsAutoCString suffix;
+  mPrincipal->GetOriginSuffix(suffix);
+
+  mHash = mozilla::AddToHash(mPrincipal->GetHashValue(),
+                             mozilla::HashString(suffix));
 }
 
 gfxFontSrcPrincipal::~gfxFontSrcPrincipal() {
