@@ -804,6 +804,11 @@ this.AntiTracking = {
           );
         }
       }
+      dump(
+        `[xeon] allMessages(${allMessages.length})=${JSON.stringify(
+          allMessages
+        )}\n`
+      );
       let index = 0;
       for (let msg of allMessages) {
         is(

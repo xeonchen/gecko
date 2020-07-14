@@ -125,6 +125,8 @@ void ReportBlockingToConsole(uint64_t aWindowID, nsIURI* aURI,
       aRejectedReason == nsIWebProgressListener::STATE_COOKIES_BLOCKED_FOREIGN);
 
   if (aURI->SchemeIs("chrome") || aURI->SchemeIs("about")) {
+    printf_stderr("[xeon] URI=%s, reason=%u\n", aURI->GetSpecOrDefault().get(),
+                  aRejectedReason);
     return;
   }
 
