@@ -65,14 +65,14 @@ add_task(async function() {
   const tests = [
     {
       prefValue: true,
-      hitsCount: 5,
+      hitsCount: [1, 3, 5],
     },
     {
       prefValue: false,
       // The font in page B/C is CORS, the channel will be flagged with
       // nsIRequest::LOAD_ANONYMOUS.
       // The flag makes the font in A and B/C use different cache key.
-      hitsCount: 2,
+      hitsCount: [1, 2, 2],
     },
   ];
 
@@ -95,11 +95,15 @@ add_task(async function() {
     );
     await contentPage.close();
 
+    Assert.equal(gHits, test.hitsCount[0], "The number of hits match");
+
     info("Let's load a page with origin B");
     contentPage = await CookieXPCShellUtils.loadContentPage(
       "http://foo.com/font"
     );
     await contentPage.close();
+
+    Assert.equal(gHits, test.hitsCount[1], "The number of hits match");
 
     info("Let's load a page with origin C");
     contentPage = await CookieXPCShellUtils.loadContentPage(
@@ -107,6 +111,6 @@ add_task(async function() {
     );
     await contentPage.close();
 
-    Assert.equal(gHits, test.hitsCount, "The number of hits match");
+    Assert.equal(gHits, test.hitsCount[2], "The number of hits match");
   }
 });
