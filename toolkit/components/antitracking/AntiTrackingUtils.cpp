@@ -614,9 +614,12 @@ bool AntiTrackingUtils::IsThirdPartyWindow(nsPIDOMWindowInner* aWindow,
   // We assume that the window is foreign to the URI by default.
   bool thirdParty = true;
 
+  printf_stderr("[xeon] AntiTrackingUtils::IsThirdPartyWindow ->\n");
   nsCOMPtr<mozIThirdPartyUtil> thirdPartyUtil = services::GetThirdPartyUtil();
   Unused << thirdPartyUtil->IsThirdPartyWindow(aWindow->GetOuterWindow(), aURI,
                                                &thirdParty);
+  printf_stderr("[xeon] AntiTrackingUtils::IsThirdPartyWindow <- (%d)\n",
+                thirdParty);
 
   return thirdParty;
 }

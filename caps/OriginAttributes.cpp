@@ -23,6 +23,8 @@ using dom::URLParams;
 static void MakeTopLevelInfo(const nsACString& aScheme, const nsACString& aHost,
                              int32_t aPort, bool aUseSite,
                              nsAString& aTopLevelInfo) {
+  printf_stderr("[xeon] MakeTopLevelInfo: aHost=%s\n",
+                PromiseFlatCString(aHost).get());
   if (!aUseSite) {
     aTopLevelInfo.Assign(NS_ConvertUTF8toUTF16(aHost));
     return;

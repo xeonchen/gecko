@@ -105,6 +105,7 @@ nsresult ThirdPartyUtil::IsThirdPartyInternal(const nsCString& aFirstDomain,
   }
 
   *aResult = IsThirdPartyInternal(aFirstDomain, secondDomain);
+  printf_stderr("[xeon] IsThirdPartyInternal=%d\n", *aResult);
   return NS_OK;
 }
 
@@ -187,9 +188,18 @@ ThirdPartyUtil::IsThirdPartyWindow(mozIDOMWindowProxy* aWindow, nsIURI* aURI,
     nsCOMPtr<nsIPrincipal> prin;
     nsresult rv = GetPrincipalFromWindow(aWindow, getter_AddRefs(prin));
     NS_ENSURE_SUCCESS(rv, rv);
+
+    {
+      nsCOMPtr<nsIURI> winURI;
+      prin->GetURI(getter_AddRefs(winURI));
+      printf_stderr("[xeon] Window=%s URI=%s\n",
+                    winURI->GetSpecOrDefault().get(),
+                    aURI->GetSpecOrDefault().get());
+    }
+
     // Determine whether aURI is foreign with respect to the current principal.
     rv = prin->IsThirdPartyURI(aURI, &result);
-    if (NS_FAILED(rv)) {
+    if (NS_WARN_IF(NS_FAILED(rv))) {
       return rv;
     }
 
@@ -198,6 +208,8 @@ ThirdPartyUtil::IsThirdPartyWindow(mozIDOMWindowProxy* aWindow, nsIURI* aURI,
       return NS_OK;
     }
   }
+
+  printf_stderr("[xeon] ThirdPartyUtil::IsThirdPartyWindow 1\n");
 
   nsPIDOMWindowOuter* current = nsPIDOMWindowOuter::From(aWindow);
   auto* const browsingContext = current->GetBrowsingContext();
@@ -210,6 +222,8 @@ ThirdPartyUtil::IsThirdPartyWindow(mozIDOMWindowProxy* aWindow, nsIURI* aURI,
   }
 
   *aResult = wc->GetIsThirdPartyWindow();
+  printf_stderr("[xeon] ThirdPartyUtil::IsThirdPartyWindow 2 result=%d\n",
+                *aResult);
   return NS_OK;
 }
 

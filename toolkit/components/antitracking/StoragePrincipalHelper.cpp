@@ -79,6 +79,16 @@ bool ChooseOriginAttributes(nsIChannel* aChannel, OriginAttributes& aAttrs,
     return false;
   }
 
+  {
+    nsCOMPtr<nsIURI> uri;
+    aChannel->GetURI(getter_AddRefs(uri));
+    if (uri && principalURI) {
+      printf_stderr("[xeon] SetPartitionKey URI=%s TopURI=%s\n",
+                    uri->GetSpecOrDefault().get(),
+                    principalURI->GetSpecOrDefault().get());
+    }
+  }
+
   aAttrs.SetPartitionKey(principalURI);
   return true;
 }

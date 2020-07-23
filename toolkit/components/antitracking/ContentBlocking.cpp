@@ -949,6 +949,14 @@ bool ContentBlocking::ShouldAllowAccessFor(nsPIDOMWindowInner* aWindow,
       // fall through
     } else if (AntiTrackingUtils::IsThirdPartyWindow(aWindow, aURI)) {
       LOG(("We're in the third-party context, storage should be partitioned"));
+
+      nsCString documentURI =
+          document->GetDocumentURI()
+              ? document->GetDocumentURI()->GetSpecOrDefault()
+              : "NULL"_ns;
+      printf_stderr("[xeon] baseDomain=%s documentURI=%s uri=%s\n",
+                    document->GetBaseDomain().get(), documentURI.get(),
+                    aURI->GetSpecOrDefault().get());
       // fall through, but remember that we're partitioning.
       blockedReason = nsIWebProgressListener::STATE_COOKIES_PARTITIONED_FOREIGN;
     } else {
@@ -976,6 +984,7 @@ bool ContentBlocking::ShouldAllowAccessFor(nsPIDOMWindowInner* aWindow,
     // fails.
     MOZ_ASSERT_IF(NS_SUCCEEDED(rv), nsContentUtils::IsThirdPartyWindowOrChannel(
                                         aWindow, nullptr, aURI) == thirdParty);
+    printf_stderr("[xeon] thirdParty=%d\n", thirdParty);
   }
 #endif
 
