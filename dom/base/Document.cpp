@@ -16577,23 +16577,15 @@ bool Document::UseRegularPrincipal() const {
 bool Document::HasThirdPartyChannel() {
   nsCOMPtr<nsIChannel> channel = GetChannel();
   if (channel) {
-    // We assume that the channel is a third-party by default.
-    bool thirdParty = true;
-
-    nsCOMPtr<mozIThirdPartyUtil> thirdPartyUtil = services::GetThirdPartyUtil();
-    if (!thirdPartyUtil) {
-      return thirdParty;
+    nsCOMPtr<nsIURI> uri;
+    nsresult rv = channel->GetURI(getter_AddRefs(uri));
+    if (NS_FAILED(rv)) {
+      // Assume third-party in case of failure
+      return true;
     }
 
     // Check that if the channel is a third-party to its parent.
-    nsresult rv =
-        thirdPartyUtil->IsThirdPartyChannel(channel, nullptr, &thirdParty);
-    if (NS_FAILED(rv)) {
-      // Assume third-party in case of failure
-      thirdParty = true;
-    }
-
-    return thirdParty;
+    return nsContentUtils::IsThirdPartyWindowOrChannel(nullptr, channel, uri);
   }
 
   if (mParentDocument) {
