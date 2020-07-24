@@ -260,6 +260,8 @@ ContentBlocking::AllowAccessFor(
          behavior ==
              nsICookieService::BEHAVIOR_REJECT_TRACKER_AND_PARTITION_FOREIGN) &&
         !parentWindowContext->GetIsThirdPartyWindow()) {
+      printf_stderr("[xeon] behavior=%x GetIsThirdPartyWindow=%d\n", behavior,
+                    parentWindowContext->GetIsThirdPartyWindow());
       LOG(("Our window isn't a third-party window"));
       return StorageAccessPermissionGrantPromise::CreateAndReject(false,
                                                                   __func__);
